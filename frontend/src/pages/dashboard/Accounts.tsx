@@ -1,35 +1,48 @@
 import { useState } from "react";
-import { PlusIcon, CheckCircle2Icon, Loader2Icon } from "lucide-react";
+import { PlusIcon, CheckCircle2Icon, Loader2Icon, ShieldCheckIcon, ClockIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
 import { PLATFORMS, formatRelativeTime } from "../../lib/dashboard";
-import { useAccounts, useConnectAccount, useDisconnectAccount } from "../../hooks/useData";
+import { useAccounts, useConnectAccount, useDisconnectAccount, useVerifyAccounts } from "../../hooks/useData";
 
 export default function Accounts() {
     const { data: accounts = [] } = useAccounts();
     const connect = useConnectAccount();
     const disconnect = useDisconnectAccount();
+    const verify = useVerifyAccounts();
     const [handles, setHandles] = useState<Record<string, string>>({});
 
-    const connectedFor = (platformId: string) => accounts.find((a) => a.platform === platformId && a.status === "connected");
+    const accountFor = (platformId: string) => accounts.find((a) => a.platform === platformId);
     const updateHandle = (platformId: string, handle: string) => setHandles((current) => ({ ...current, [platformId]: handle }));
 
     return (
         <>
-            <PageHeader title="Accounts" subtitle="Connect the platforms you want to publish to" />
+            <PageHeader
+                title="Accounts"
+                subtitle="Connect the platforms you want to publish to"
+                action={
+                    <button onClick={() => verify.mutate()} disabled={verify.isPending} className="inline-flex items-center gap-2 text-sm border border-slate-200 text-slate-600 rounded-full px-4 py-2 hover:bg-slate-50 disabled:opacity-50">
+                        {verify.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <ShieldCheckIcon className="size-4" />} Verify connections
+                    </button>
+                }
+            />
 
             <div className="grid sm:grid-cols-2 gap-4">
                 {PLATFORMS.map((p) => {
-                    const acct = connectedFor(p.id);
+                    const acct = accountFor(p.id);
                     const busy = (connect.isPending && connect.variables?.platform === p.id) || (disconnect.isPending && disconnect.variables === acct?._id);
                     return (
                         <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
                             <PlatformBadge platform={p.id} />
                             <div className="min-w-0 flex-1">
                                 <div className="text-sm text-slate-800">{p.name}</div>
-                                {acct ? (
+                                {acct && acct.status === "connected" ? (
                                     <div className="flex items-center gap-1.5 text-xs text-emerald-600 mt-0.5">
-                                        <CheckCircle2Icon className="size-3.5" /> @{acct.handle} · connected {formatRelativeTime(acct.updatedAt)}
+                                        <CheckCircle2Icon className="size-3.5" /> @{acct.handle} · verified {formatRelativeTime(acct.updatedAt)}
+                                    </div>
+                                ) : acct ? (
+                                    <div className="flex items-center gap-1.5 text-xs text-amber-600 mt-0.5">
+                                        <ClockIcon className="size-3.5" /> @{acct.handle} · awaiting verification — connect {p.name} in your provider, then Verify
                                     </div>
                                 ) : (
                                     <input
@@ -59,7 +72,7 @@ export default function Accounts() {
                 })}
             </div>
 
-            <p className="text-xs text-slate-400 mt-4">Connections persist to your account. Scheduled posts publish automatically on time (simulated delivery in this build) — connect a publishing provider to post to real timelines.</p>
+            <p className="text-xs text-slate-400 mt-4">Connections persist to your account. Scheduled posts publish automatically on time. Connect each platform in your publishing provider (Ayrshare), then click <span className="text-slate-500">Verify connections</span> — verified platforms post to your real timelines.</p>
         </>
     );
 }

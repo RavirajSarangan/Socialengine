@@ -120,6 +120,14 @@ export function useDisconnectAccount() {
     });
 }
 
+export function useVerifyAccounts() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async () => (await api.post<SocialAccount[]>("/accounts/verify")).data,
+        onSuccess: () => qc.invalidateQueries({ queryKey: qk.accounts }),
+    });
+}
+
 export function useAutoReply() {
     return useQuery({ queryKey: qk.autoReply, queryFn: async () => (await api.get<AutoReplyRule[]>("/auto-reply")).data });
 }
