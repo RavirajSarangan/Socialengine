@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Auto-configures a MongoDB Replica Set required for real-time change streams
+  mongodb:
+    image: mongo:7.0
+    container_name: socialengine_mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      # This command auto-initializes the replica set if it hasn't been already
+      test: >
+        echo "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}).ok }" | mongosh --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  backend:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: socialengine_backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: ./mvnw spring-boot:run
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/socialengine?replicaSet=rs0
+      - JWT_SECRET=auto_generated_development_secret_key_12345
+      - CLIENT_URL=http://localhost:5173
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  frontend:
+    image: node:18-alpine
+    container_name: socialengine_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
+volumes:
+  mongo_data:

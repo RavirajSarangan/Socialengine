@@ -5,9 +5,6 @@ import dev.socialengine.domain.Post;
 import dev.socialengine.realtime.RealtimePublisher;
 import dev.socialengine.repo.PostRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,16 +30,18 @@ public class PublishService {
         this.ayrshare = ayrshare;
     }
 
-    /** Publishes a post — via Ayrshare when configured, otherwise simulated. Throws on real-provider failure. */
+    /** Publishes a post — via Ayrshare when configured, otherwise simulated. Records failures instead of throwing. */
     public Post publish(Post p) {
         if (ayrshare.isEnabled()) {
             AyrshareClient.PublishResult result = ayrshare.publish(p.getContent(), p.getPlatforms(), mediaUrls(p));
             if (!result.ok()) {
                 p.setStatus("failed");
                 p.setUpdatedAt(Instant.now());
-                posts.save(p);
+                p = posts.save(p);
+                String detail = result.detail();
+                activityService.log(p.getUserId(), "POST_PUBLISH_FAILED", "Publish failed: " + detail, p);
                 realtime.postsChanged(p.getUserId());
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Publish failed: " + result.detail());
+                return p;
             }
         }
 

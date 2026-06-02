@@ -4,6 +4,7 @@ import { PenSquareIcon, CopyIcon, SendIcon, Trash2Icon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PostCard from "../../components/dashboard/PostCard";
 import { usePosts, useDuplicatePost, usePublishPost, useDeletePost } from "../../hooks/useData";
+import { apiErrorMessage } from "../../lib/api";
 import type { Post, PostStatus } from "../../lib/types";
 
 const FILTERS: { id: "all" | PostStatus; label: string }[] = [
@@ -25,7 +26,16 @@ function PostRow({ post }: { post: Post }) {
             <PostCard post={post} />
             <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 {canPublish && (
-                    <button onClick={() => publish.mutate(post._id)} disabled={publish.isPending} title="Publish now" className="size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 disabled:opacity-50">
+                    <button onClick={() => publish.mutate(post._id, {
+                        onSuccess: (res) => {
+                            if (res && (res as Post).status === "failed") {
+                                alert("Publish failed: provider returned an error — post marked failed.");
+                            }
+                        },
+                        onError: (err) => {
+                            alert(apiErrorMessage(err, "Publish request failed"));
+                        }
+                    })} disabled={publish.isPending} title="Publish now" className="size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 disabled:opacity-50">
                         <SendIcon className="size-3.5" />
                     </button>
                 )}
