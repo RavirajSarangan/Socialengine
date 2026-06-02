@@ -45,8 +45,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allow the configured client plus any localhost port (dev machines run several Vite servers).
-        config.setAllowedOriginPatterns(List.of(clientUrl, "http://localhost:*", "http://127.0.0.1:*"));
+        // Dev: allow any origin (localhost, 127.0.0.1, LAN IP, IDE port-forward proxy).
+        // Safe here because the API authenticates with Bearer tokens, not cookies.
+        // Tighten to specific origins (clientUrl) before production.
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
