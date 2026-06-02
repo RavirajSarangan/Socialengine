@@ -81,6 +81,28 @@ export function useDuplicatePost() {
     });
 }
 
+function invalidatePosts(qc: ReturnType<typeof useQueryClient>) {
+    qc.invalidateQueries({ queryKey: qk.posts });
+    qc.invalidateQueries({ queryKey: qk.activity });
+    qc.invalidateQueries({ queryKey: qk.analytics });
+}
+
+export function usePublishPost() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => (await api.post<Post>(`/posts/${id}/publish`)).data,
+        onSuccess: () => invalidatePosts(qc),
+    });
+}
+
+export function useDeletePost() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => api.delete(`/posts/${id}`),
+        onSuccess: () => invalidatePosts(qc),
+    });
+}
+
 export function useConnectAccount() {
     const qc = useQueryClient();
     return useMutation({

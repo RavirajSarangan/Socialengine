@@ -7,6 +7,7 @@ import dev.socialengine.realtime.RealtimePublisher;
 import dev.socialengine.repo.PostRepository;
 import dev.socialengine.security.CurrentUserId;
 import dev.socialengine.service.ActivityService;
+import dev.socialengine.service.PublishService;
 import dev.socialengine.web.dto.Dtos.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,11 +23,13 @@ public class PostController {
     private final PostRepository posts;
     private final ActivityService activityService;
     private final RealtimePublisher realtime;
+    private final PublishService publishService;
 
-    public PostController(PostRepository posts, ActivityService activityService, RealtimePublisher realtime) {
+    public PostController(PostRepository posts, ActivityService activityService, RealtimePublisher realtime, PublishService publishService) {
         this.posts = posts;
         this.activityService = activityService;
         this.realtime = realtime;
+        this.publishService = publishService;
     }
 
     @GetMapping
@@ -88,13 +91,7 @@ public class PostController {
         Post p = owned(userId, id);
         p.setStatus("published");
         validateMediaForPublish(p);
-        p.setPublishedAt(Instant.now());
-        p.setUpdatedAt(Instant.now());
-        p = posts.save(p);
-        activityService.log(userId, "POST_PUBLISHED",
-                "Published post to " + String.join(", ", p.getPlatforms() == null ? List.of() : p.getPlatforms()), p);
-        realtime.postsChanged(userId);
-        return Mappers.post(p);
+        return Mappers.post(publishService.publish(p));
     }
 
     @PostMapping("/{id}/duplicate")

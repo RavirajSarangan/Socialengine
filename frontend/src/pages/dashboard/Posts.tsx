@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { PenSquareIcon, CopyIcon } from "lucide-react";
+import { PenSquareIcon, CopyIcon, SendIcon, Trash2Icon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PostCard from "../../components/dashboard/PostCard";
-import { usePosts, useDuplicatePost } from "../../hooks/useData";
-import type { PostStatus } from "../../lib/types";
+import { usePosts, useDuplicatePost, usePublishPost, useDeletePost } from "../../hooks/useData";
+import type { Post, PostStatus } from "../../lib/types";
 
 const FILTERS: { id: "all" | PostStatus; label: string }[] = [
     { id: "all", label: "All" },
@@ -14,10 +14,35 @@ const FILTERS: { id: "all" | PostStatus; label: string }[] = [
     { id: "failed", label: "Failed" },
 ];
 
+function PostRow({ post }: { post: Post }) {
+    const duplicate = useDuplicatePost();
+    const publish = usePublishPost();
+    const del = useDeletePost();
+    const canPublish = post.status === "scheduled" || post.status === "draft";
+
+    return (
+        <div className="relative group">
+            <PostCard post={post} />
+            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {canPublish && (
+                    <button onClick={() => publish.mutate(post._id)} disabled={publish.isPending} title="Publish now" className="size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 disabled:opacity-50">
+                        <SendIcon className="size-3.5" />
+                    </button>
+                )}
+                <button onClick={() => duplicate.mutate(post._id)} title="Duplicate as draft" className="size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200">
+                    <CopyIcon className="size-3.5" />
+                </button>
+                <button onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) del.mutate(post._id); }} disabled={del.isPending} title="Delete post" className="size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 disabled:opacity-50">
+                    <Trash2Icon className="size-3.5" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function Posts() {
     const [filter, setFilter] = useState<"all" | PostStatus>("all");
     const { data: posts = [], isLoading } = usePosts();
-    const duplicate = useDuplicatePost();
 
     const filtered = posts
         .filter((p) => filter === "all" || p.status === filter)
@@ -48,12 +73,7 @@ export default function Posts() {
 
             <div className="grid md:grid-cols-2 gap-3">
                 {filtered.map((p) => (
-                    <div key={p._id} className="relative group">
-                        <PostCard post={p} />
-                        <button onClick={() => duplicate.mutate(p._id)} title="Duplicate as draft" className="absolute bottom-3 right-3 size-7 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:border-red-200 transition-all">
-                            <CopyIcon className="size-3.5" />
-                        </button>
-                    </div>
+                    <PostRow key={p._id} post={p} />
                 ))}
             </div>
             {filtered.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">{isLoading ? "Loading posts…" : "No posts match this filter."}</div>}

@@ -59,7 +59,7 @@ export default function Accounts() {
                 })}
             </div>
 
-            <p className="text-xs text-slate-400 mt-4">Connections persist to your account. Live publishing via the Zernio/Ayrshare API is wired in Phase 9.</p>
+            <p className="text-xs text-slate-400 mt-4">Connections persist to your account. Scheduled posts publish automatically on time (simulated delivery in this build) — connect a publishing provider to post to real timelines.</p>
         </>
     );
 }
