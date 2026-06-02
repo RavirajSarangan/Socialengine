@@ -53,7 +53,7 @@ export default function Media() {
                                 <div className="text-xs text-slate-500 truncate">{a.name || a.type}</div>
                                 <div className="text-[11px] text-slate-400 mb-2">{formatRelativeTime(a.createdAt)}</div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => navigate("/dashboard/compose", { state: { media: { url: a.url, type: a.type, posterUrl: a.posterUrl } } })} className="flex-1 inline-flex items-center justify-center gap-1 text-xs text-red-600 bg-red-50 border border-red-100 rounded-full py-1.5 hover:bg-red-100">
+                                    <button onClick={() => navigate("/dashboard/compose", { state: { media: { url: a.url, type: a.type, posterUrl: a.posterUrl, size: a.size } } })} className="flex-1 inline-flex items-center justify-center gap-1 text-xs text-red-600 bg-red-50 border border-red-100 rounded-full py-1.5 hover:bg-red-100">
                                         <SendIcon className="size-3" /> Use in post
                                     </button>
                                     <button onClick={() => remove.mutate(a._id)} className="size-7 grid place-items-center rounded-full border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200">

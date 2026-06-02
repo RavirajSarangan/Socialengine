@@ -17,6 +17,7 @@ export interface MediaItem {
     url: string;
     type: MediaType;
     posterUrl?: string;
+    size?: number; // bytes — used for per-platform size validation
 }
 
 export interface MediaAsset {

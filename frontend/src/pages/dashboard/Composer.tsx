@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SparklesIcon, ImageIcon, AudioLinesIcon, CalendarClockIcon, SendIcon, Loader2Icon, XIcon, UploadCloudIcon, SmileIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
 import MediaPreview from "../../components/dashboard/MediaPreview";
 import { PLATFORMS, toneOptions, captionLimit, EMOJIS } from "../../lib/dashboard";
+import { validateMedia, acceptFor, acceptedFormats } from "../../lib/platformMedia";
 import { useAuth } from "../../context/AuthContext";
 import { useCreatePost, useGenerateCaption, useGenerateImage, useGenerateVoice } from "../../hooks/useData";
 import { useUploadMedia } from "../../hooks/useMedia";
@@ -82,7 +83,7 @@ export default function Composer() {
                 const type: MediaType = file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "image";
                 const asset = await uploadMedia.mutateAsync(file);
                 const posterUrl = type === "video" ? await capturePoster(file) : undefined;
-                setMedia((m) => [...m, { url: asset.url, type, posterUrl }]);
+                setMedia((m) => [...m, { url: asset.url, type, posterUrl, size: asset.size ?? file.size }]);
             }
         } catch (e) {
             setAiError(apiErrorMessage(e, "Upload failed"));
@@ -133,6 +134,8 @@ export default function Composer() {
 
     const limit = captionLimit(selected);
     const remaining = limit - content.length;
+    const { errors: mediaErrors, warnings: mediaWarnings } = useMemo(() => validateMedia(media, selected), [media, selected]);
+    const blocked = mediaErrors.length > 0;
 
     return (
         <>
@@ -200,8 +203,25 @@ export default function Composer() {
                             {uploading ? <Loader2Icon className="size-5 animate-spin text-red-400" /> : <UploadCloudIcon className="size-5 text-slate-400" />}
                             <span className="text-sm text-slate-500">Drop images / videos / audio, or click to upload</span>
                             <span className="text-xs text-slate-400">Up to 50&nbsp;MB each</span>
-                            <input type="file" accept="image/*,video/*,audio/*" multiple className="hidden" onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }} />
+                            <input type="file" accept={acceptFor(selected)} multiple className="hidden" onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }} />
                         </label>
+
+                        {selected.length > 0 && (
+                            <p className="text-xs text-slate-400 mt-2">
+                                Accepted for {selected.map((p) => `${PLATFORMS.find((x) => x.id === p)?.name ?? p} (${acceptedFormats(p).join(", ")})`).join(" · ")}
+                            </p>
+                        )}
+
+                        {mediaErrors.length > 0 && (
+                            <div className="mt-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 space-y-1">
+                                {mediaErrors.map((e) => <p key={e} className="text-xs text-red-600">⛔ {e}</p>)}
+                            </div>
+                        )}
+                        {mediaWarnings.length > 0 && (
+                            <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 space-y-1">
+                                {mediaWarnings.map((w) => <p key={w} className="text-xs text-amber-600">⚠️ {w}</p>)}
+                            </div>
+                        )}
 
                         {media.length > 0 && (
                             <div className="grid grid-cols-3 gap-2.5 mt-3">
@@ -244,7 +264,7 @@ export default function Composer() {
                         </div>
 
                         <div className="flex gap-3 mt-5">
-                            <button onClick={() => submit(schedule ? "scheduled" : "published")} className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0 || remaining < 0 || createPost.isPending}>
+                            <button onClick={() => submit(schedule ? "scheduled" : "published")} className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0 || remaining < 0 || blocked || createPost.isPending}>
                                 {createPost.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <SendIcon className="size-4" />} {schedule ? "Schedule post" : "Publish now"}
                             </button>
                             <button onClick={() => submit("draft")} disabled={!content || createPost.isPending} className="px-5 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Save draft</button>

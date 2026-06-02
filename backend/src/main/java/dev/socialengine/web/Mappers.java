@@ -20,7 +20,7 @@ public final class Mappers {
 
     public static PostDto post(Post p) {
         List<MediaItemDto> media = p.getMedia() == null ? null
-                : p.getMedia().stream().map(m -> new MediaItemDto(m.getUrl(), m.getType(), m.getPosterUrl())).toList();
+                : p.getMedia().stream().map(m -> new MediaItemDto(m.getUrl(), m.getType(), m.getPosterUrl(), m.getSize())).toList();
         return new PostDto(p.getId(), p.getUserId(), p.getContent(), p.getPlatforms(),
                 p.getMediaUrl(), p.getMediaType(), media, iso(p.getScheduledFor()), p.getStatus(),
                 iso(p.getPublishedAt()), iso(p.getCreatedAt()), iso(p.getUpdatedAt()));

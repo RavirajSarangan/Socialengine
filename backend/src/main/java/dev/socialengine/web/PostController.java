@@ -1,5 +1,6 @@
 package dev.socialengine.web;
 
+import dev.socialengine.config.PlatformMedia;
 import dev.socialengine.domain.MediaItem;
 import dev.socialengine.domain.Post;
 import dev.socialengine.realtime.RealtimePublisher;
@@ -48,6 +49,7 @@ public class PostController {
         applyMedia(p, req);
         p.setScheduledFor(parse(req.scheduledFor()));
         p.setStatus(req.status() == null ? "scheduled" : req.status());
+        validateMediaForPublish(p);
         if ("published".equals(p.getStatus())) {
             p.setPublishedAt(Instant.now());
         }
@@ -85,6 +87,7 @@ public class PostController {
     public PostDto publish(@CurrentUserId String userId, @PathVariable String id) {
         Post p = owned(userId, id);
         p.setStatus("published");
+        validateMediaForPublish(p);
         p.setPublishedAt(Instant.now());
         p.setUpdatedAt(Instant.now());
         p = posts.save(p);
@@ -112,11 +115,22 @@ public class PostController {
         return Mappers.post(copy);
     }
 
+    /** Blocks publishing/scheduling a post whose media violates a selected platform's spec (drafts are exempt). */
+    private void validateMediaForPublish(Post p) {
+        if ("draft".equals(p.getStatus()) || p.getMedia() == null || p.getMedia().isEmpty()) return;
+        List<MediaItemDto> media = p.getMedia().stream()
+                .map(m -> new MediaItemDto(m.getUrl(), m.getType(), m.getPosterUrl(), m.getSize())).toList();
+        List<String> violations = PlatformMedia.validate(p.getPlatforms(), media);
+        if (!violations.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, String.join(" ", violations));
+        }
+    }
+
     /** Applies media[] (and keeps the legacy single-media fields in sync from media[0]). */
     private void applyMedia(Post p, CreatePostRequest req) {
         if (req.media() != null) {
             List<MediaItem> items = req.media().stream()
-                    .map(m -> new MediaItem(m.url(), m.type(), m.posterUrl())).toList();
+                    .map(m -> new MediaItem(m.url(), m.type(), m.posterUrl(), m.size())).toList();
             p.setMedia(items);
             if (!items.isEmpty()) {
                 p.setMediaUrl(items.get(0).getUrl());

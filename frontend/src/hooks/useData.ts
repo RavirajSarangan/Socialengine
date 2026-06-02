@@ -15,6 +15,7 @@ export interface PostMediaInput {
     url: string;
     type: string;
     posterUrl?: string;
+    size?: number;
 }
 
 export interface CreatePostInput {

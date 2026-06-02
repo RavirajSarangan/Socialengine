@@ -46,7 +46,7 @@ public final class Dtos {
     public record MediaAssetDto(@JsonProperty("_id") String id, String user, String url, String type,
                                 String posterUrl, String name, long size, String source, String createdAt) {}
     public record UpdatePosterRequest(String posterUrl) {}
-    public record MediaItemDto(String url, String type, String posterUrl) {}
+    public record MediaItemDto(String url, String type, String posterUrl, Long size) {}
 
     // ---- Activity ----
     public record RelatedPostDto(@JsonProperty("_id") String id, String content) {}
