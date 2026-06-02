@@ -22,3 +22,9 @@ backend/src/main/resources/application-local.yml
 .idea/
 *.iml
 .vscode/
+
+# Eclipse / STS (backend IDE metadata)
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/bin/

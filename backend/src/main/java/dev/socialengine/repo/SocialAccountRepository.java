@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface SocialAccountRepository extends MongoRepository<SocialAccount, String> {
     List<SocialAccount> findByUserId(String userId);
+    void deleteByUserId(String userId);
 }

@@ -45,6 +45,8 @@ public final class Dtos {
     // ---- Auto-reply ----
     public record AutoReplyDto(@JsonProperty("_id") String id, String user, String platform,
                                String trigger, String tone, String instructions, boolean enabled) {}
+    public record CreateAutoReplyRuleRequest(String platform, String trigger, String tone, String instructions,
+                                             Boolean enabled) {}
     public record ToggleRuleRequest(boolean enabled) {}
 
     // ---- Analytics ----

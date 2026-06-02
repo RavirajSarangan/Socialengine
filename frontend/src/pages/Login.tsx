@@ -7,12 +7,28 @@ import { apiErrorMessage } from "../lib/api";
 export default function Login() {
     const [loginState, setLoginState] = useState(true);
     const [name, setName] = useState("");
-    const [email, setEmail] = useState("demo@socialengine.app");
-    const [password, setPassword] = useState("demo1234");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const { login, register } = useAuth();
+
+    const switchToRegister = () => {
+        setLoginState(false);
+        setName("");
+        setEmail("");
+        setPassword("");
+        setError("");
+    };
+
+    const switchToLogin = () => {
+        setLoginState(true);
+        setName("");
+        setEmail("");
+        setPassword("");
+        setError("");
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,10 +87,10 @@ export default function Login() {
 
                         <button type="submit" disabled={loading} className="w-full py-2.5 px-4 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                             {loading ? (
-                                "Signing in..."
+                                loginState ? "Signing in..." : "Creating account..."
                             ) : (
                                 <>
-                                    {loginState ? "Sign In" : "Sign Up"} <ArrowRightIcon className="size-4" />
+                                    {loginState ? "Sign In" : "Create Account"} <ArrowRightIcon className="size-4" />
                                 </>
                             )}
                         </button>
@@ -84,14 +100,14 @@ export default function Login() {
                         {loginState ? (
                             <>
                                 Don't have an account?{" "}
-                                <button onClick={() => setLoginState(false)} className="text-red-600 hover:text-red-700">
+                                <button type="button" onClick={switchToRegister} className="text-red-600 hover:text-red-700">
                                     Create one free
                                 </button>
                             </>
                         ) : (
                             <>
                                 Already have an account?{" "}
-                                <button onClick={() => setLoginState(true)} className="text-red-600 hover:text-red-700">
+                                <button type="button" onClick={switchToLogin} className="text-red-600 hover:text-red-700">
                                     Sign In
                                 </button>
                             </>

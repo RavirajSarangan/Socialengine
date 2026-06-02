@@ -20,6 +20,16 @@ public class RealtimePublisher {
         messaging.convertAndSend("/topic/posts", Map.of("type", "posts:changed", "userId", userId));
     }
 
+    /** Tell clients the connected accounts collection changed. */
+    public void accountsChanged(String userId) {
+        messaging.convertAndSend("/topic/accounts", Map.of("type", "accounts:changed", "userId", userId));
+    }
+
+    /** Tell clients the auto-reply rule collection changed. */
+    public void autoReplyChanged(String userId) {
+        messaging.convertAndSend("/topic/auto-reply", Map.of("type", "auto-reply:changed", "userId", userId));
+    }
+
     /** Push a new activity entry to the live feed. */
     public void activityChanged(String userId, Object activity) {
         messaging.convertAndSend("/topic/activity",

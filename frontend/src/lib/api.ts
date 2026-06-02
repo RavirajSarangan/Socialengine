@@ -32,7 +32,9 @@ api.interceptors.response.use(
     (res) => res,
     (error) => {
         const status = error?.response?.status;
-        if (status === 401 || status === 403) {
+        const url = error?.config?.url ?? "";
+        const isPublicAuthRequest = url.startsWith("/auth/login") || url.startsWith("/auth/register");
+        if ((status === 401 || status === 403) && !isPublicAuthRequest) {
             clearToken();
             if (!window.location.pathname.startsWith("/login")) {
                 window.location.assign("/login");

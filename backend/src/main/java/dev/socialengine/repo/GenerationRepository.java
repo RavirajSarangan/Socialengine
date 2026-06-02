@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface GenerationRepository extends MongoRepository<Generation, String> {
     List<Generation> findByUserIdOrderByCreatedAtDesc(String userId);
+    void deleteByUserId(String userId);
 }

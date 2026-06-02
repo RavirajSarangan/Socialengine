@@ -9,4 +9,5 @@ import java.util.List;
 public interface PostRepository extends MongoRepository<Post, String> {
     List<Post> findByUserIdOrderByScheduledForDesc(String userId);
     List<Post> findByStatusAndScheduledForBefore(String status, Instant before);
+    void deleteByUserId(String userId);
 }

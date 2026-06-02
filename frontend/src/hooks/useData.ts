@@ -90,3 +90,15 @@ export function useToggleRule() {
         onSuccess: () => qc.invalidateQueries({ queryKey: qk.autoReply }),
     });
 }
+
+export function useCreateRule() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { platform: string; trigger: string; tone: string; instructions: string; enabled?: boolean }) =>
+            (await api.post<AutoReplyRule>("/auto-reply", input)).data,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: qk.autoReply });
+            qc.invalidateQueries({ queryKey: qk.analytics });
+        },
+    });
+}

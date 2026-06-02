@@ -37,16 +37,6 @@ export function truncate(text: string, max = 140): string {
 
 /* ---- Static config for AI Studio / Composer ---- */
 
-export const analyticsSeries = [
-    { label: "Mon", posts: 3, engagement: 120 },
-    { label: "Tue", posts: 5, engagement: 240 },
-    { label: "Wed", posts: 2, engagement: 90 },
-    { label: "Thu", posts: 6, engagement: 320 },
-    { label: "Fri", posts: 4, engagement: 280 },
-    { label: "Sat", posts: 1, engagement: 60 },
-    { label: "Sun", posts: 3, engagement: 150 },
-];
-
 export const voiceOptions = [
     { id: "rachel", name: "Rachel", description: "Warm, natural narration" },
     { id: "adam", name: "Adam", description: "Deep, confident male" },

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { PlusIcon, CheckCircle2Icon, Loader2Icon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
@@ -8,8 +9,10 @@ export default function Accounts() {
     const { data: accounts = [] } = useAccounts();
     const connect = useConnectAccount();
     const disconnect = useDisconnectAccount();
+    const [handles, setHandles] = useState<Record<string, string>>({});
 
     const connectedFor = (platformId: string) => accounts.find((a) => a.platform === platformId && a.status === "connected");
+    const updateHandle = (platformId: string, handle: string) => setHandles((current) => ({ ...current, [platformId]: handle }));
 
     return (
         <>
@@ -29,13 +32,25 @@ export default function Accounts() {
                                         <CheckCircle2Icon className="size-3.5" /> @{acct.handle} · connected {formatRelativeTime(acct.updatedAt)}
                                     </div>
                                 ) : (
-                                    <div className="text-xs text-slate-400 mt-0.5 truncate">{p.description}</div>
+                                    <input
+                                        value={handles[p.id] ?? ""}
+                                        onChange={(e) => updateHandle(p.id, e.target.value)}
+                                        placeholder="@handle"
+                                        className="mt-2 w-full max-w-xs rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-red-300 focus:bg-white"
+                                    />
                                 )}
                             </div>
                             {acct ? (
                                 <button onClick={() => disconnect.mutate(acct._id)} disabled={busy} className="text-xs text-slate-500 border border-slate-200 rounded-full px-3.5 py-1.5 hover:bg-slate-50 disabled:opacity-50">Disconnect</button>
                             ) : (
-                                <button onClick={() => connect.mutate({ platform: p.id, handle: "socialengine" })} disabled={busy} className="inline-flex items-center gap-1.5 text-xs text-white bg-linear-to-r from-red-600 to-red-500 rounded-full px-3.5 py-1.5 hover:shadow-[0_6px_18px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50">
+                                <button
+                                    onClick={() => connect.mutate(
+                                        { platform: p.id, handle: (handles[p.id] ?? "").trim() },
+                                        { onSuccess: () => updateHandle(p.id, "") }
+                                    )}
+                                    disabled={busy || !(handles[p.id] ?? "").trim()}
+                                    className="inline-flex items-center gap-1.5 text-xs text-white bg-linear-to-r from-red-600 to-red-500 rounded-full px-3.5 py-1.5 hover:shadow-[0_6px_18px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50"
+                                >
                                     {busy ? <Loader2Icon className="size-3.5 animate-spin" /> : <PlusIcon className="size-3.5" />} Connect
                                 </button>
                             )}

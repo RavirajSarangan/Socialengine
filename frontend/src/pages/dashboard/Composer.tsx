@@ -7,9 +7,6 @@ import { PLATFORMS, toneOptions } from "../../lib/dashboard";
 import { useAuth } from "../../context/AuthContext";
 import { useCreatePost } from "../../hooks/useData";
 
-const SAMPLE_CAPTION =
-    "🚀 Big news! We just shipped a feature our community has been asking for.\n\nIt's fast, it's clean, and it's live today. Tap the link in bio to try it out and let us know what you think 👇\n\n#ProductLaunch #BuildInPublic #Startup";
-
 export default function Composer() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -20,6 +17,7 @@ export default function Composer() {
     const [tone, setTone] = useState(toneOptions[0]);
     const [schedule, setSchedule] = useState("");
     const [generating, setGenerating] = useState<null | "text" | "image" | "voice">(null);
+    const [aiError, setAiError] = useState("");
 
     function togglePlatform(id: string) {
         setSelected((s) => (s.includes(id) ? s.filter((p) => p !== id) : [...s, id]));
@@ -40,14 +38,10 @@ export default function Composer() {
         );
     }
 
-    /* Phase 4 wires these to POST /ai/* (OpenAI + ElevenLabs). For now they simulate. */
     function generate(kind: "text" | "image" | "voice") {
         setGenerating(kind);
-        setTimeout(() => {
-            if (kind === "text") setContent(SAMPLE_CAPTION);
-            if (kind === "image") setMediaUrl("https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80");
-            setGenerating(null);
-        }, 1200);
+        setAiError("AI generation API is not connected yet.");
+        setGenerating(null);
     }
 
     const remaining = 2200 - content.length;
@@ -93,6 +87,7 @@ export default function Composer() {
                             <AIButton label="Generate image" sub="OpenAI" icon={ImageIcon} loading={generating === "image"} onClick={() => generate("image")} />
                             <AIButton label="Add voiceover" sub="ElevenLabs" icon={AudioLinesIcon} loading={generating === "voice"} onClick={() => generate("voice")} />
                         </div>
+                        {aiError && <p className="mt-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">{aiError}</p>}
                     </div>
 
                     {/* Media */}
