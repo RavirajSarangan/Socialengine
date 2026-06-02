@@ -1,13 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SparklesIcon, ImageIcon, AudioLinesIcon, CalendarClockIcon, SendIcon, Loader2Icon, XIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
-import { PLATFORMS, currentUser, toneOptions } from "../../lib/dashboard";
+import { PLATFORMS, toneOptions } from "../../lib/dashboard";
+import { useAuth } from "../../context/AuthContext";
+import { useCreatePost } from "../../hooks/useData";
 
 const SAMPLE_CAPTION =
     "🚀 Big news! We just shipped a feature our community has been asking for.\n\nIt's fast, it's clean, and it's live today. Tap the link in bio to try it out and let us know what you think 👇\n\n#ProductLaunch #BuildInPublic #Startup";
 
 export default function Composer() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const createPost = useCreatePost();
     const [content, setContent] = useState("");
     const [selected, setSelected] = useState<string[]>(["instagram"]);
     const [mediaUrl, setMediaUrl] = useState("");
@@ -17,6 +23,21 @@ export default function Composer() {
 
     function togglePlatform(id: string) {
         setSelected((s) => (s.includes(id) ? s.filter((p) => p !== id) : [...s, id]));
+    }
+
+    function submit() {
+        const scheduledFor = schedule ? new Date(schedule).toISOString() : new Date().toISOString();
+        createPost.mutate(
+            {
+                content,
+                platforms: selected,
+                mediaUrl: mediaUrl || undefined,
+                mediaType: mediaUrl ? "image" : undefined,
+                scheduledFor,
+                status: schedule ? "scheduled" : "published",
+            },
+            { onSuccess: () => navigate("/dashboard/posts") }
+        );
     }
 
     /* Phase 4 wires these to POST /ai/* (OpenAI + ElevenLabs). For now they simulate. */
@@ -65,7 +86,7 @@ export default function Composer() {
                         <div className="flex items-center gap-2 mb-3">
                             <SparklesIcon className="size-4 text-red-500" />
                             <h3 className="text-sm font-medium text-slate-700">Generate with AI</h3>
-                            <span className="text-xs text-slate-400 ml-auto">{currentUser.aiCredits} credits</span>
+                            <span className="text-xs text-slate-400 ml-auto">{user?.aiCredits ?? 0} credits</span>
                         </div>
                         <div className="grid sm:grid-cols-3 gap-3">
                             <AIButton label="Write caption" sub="OpenAI" icon={SparklesIcon} loading={generating === "text"} onClick={() => generate("text")} />
@@ -113,10 +134,10 @@ export default function Composer() {
                         </div>
 
                         <div className="flex gap-3 mt-5">
-                            <button className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0}>
-                                <SendIcon className="size-4" /> {schedule ? "Schedule post" : "Publish now"}
+                            <button onClick={submit} className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0 || createPost.isPending}>
+                                {createPost.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <SendIcon className="size-4" />} {schedule ? "Schedule post" : "Publish now"}
                             </button>
-                            <button className="px-5 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">Save draft</button>
+                            <button onClick={() => createPost.mutate({ content, platforms: selected, mediaUrl: mediaUrl || undefined, mediaType: mediaUrl ? "image" : undefined, status: "draft" }, { onSuccess: () => navigate("/dashboard/posts") })} disabled={!content} className="px-5 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Save draft</button>
                         </div>
                     </div>
                 </div>
@@ -126,9 +147,9 @@ export default function Composer() {
                     <h3 className="text-sm font-medium text-slate-700 mb-3">Preview</h3>
                     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden sticky top-24">
                         <div className="flex items-center gap-3 p-4 border-b border-slate-100">
-                            <span className="size-9 rounded-full bg-linear-to-br from-red-500 to-red-600 text-white grid place-items-center text-xs font-medium">{currentUser.name.slice(0, 2).toUpperCase()}</span>
+                            <span className="size-9 rounded-full bg-linear-to-br from-red-500 to-red-600 text-white grid place-items-center text-xs font-medium">{(user?.name ?? "SE").slice(0, 2).toUpperCase()}</span>
                             <div>
-                                <div className="text-sm text-slate-700">{currentUser.name}</div>
+                                <div className="text-sm text-slate-700">{user?.name ?? "You"}</div>
                                 <div className="flex items-center gap-1 mt-0.5">
                                     {selected.length ? selected.map((p) => <PlatformBadge key={p} platform={p} size="sm" />) : <span className="text-xs text-slate-400">No platform selected</span>}
                                 </div>

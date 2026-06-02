@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Overview from "./pages/dashboard/Overview";
 import Composer from "./pages/dashboard/Composer";
@@ -18,8 +19,9 @@ export default function App() {
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<Overview />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                    <Route index element={<Overview />} />
                 <Route path="compose" element={<Composer />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="posts" element={<Posts />} />
@@ -27,8 +29,9 @@ export default function App() {
                 <Route path="ai-studio" element={<AIStudio />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="activity" element={<Activity />} />
-                <Route path="auto-reply" element={<AutoReply />} />
-                <Route path="settings" element={<Settings />} />
+                    <Route path="auto-reply" element={<AutoReply />} />
+                    <Route path="settings" element={<Settings />} />
+                </Route>
             </Route>
         </Routes>
     );

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { SparklesIcon, ImageIcon, AudioLinesIcon, Loader2Icon, WandSparklesIcon, CopyIcon, PlayIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
-import { currentUser, generations, toneOptions, truncate, voiceOptions } from "../../lib/dashboard";
+import { toneOptions, truncate, voiceOptions } from "../../lib/dashboard";
+import { useAuth } from "../../context/AuthContext";
+import { useGenerations } from "../../hooks/useData";
 
 type Tab = "caption" | "image" | "voice";
 
@@ -15,6 +17,9 @@ const SAMPLE_TEXT =
     "Introducing our most requested update yet. ✨ Faster, smarter, and built around how you actually work. Available today for every plan — no upgrade required.\n\n#ProductUpdate #Innovation #BuildInPublic";
 
 export default function AIStudio() {
+    const { user } = useAuth();
+    const { data: generations = [] } = useGenerations();
+    const aiCredits = user?.aiCredits ?? 0;
     const [tab, setTab] = useState<Tab>("caption");
     const [prompt, setPrompt] = useState("");
     const [tone, setTone] = useState(toneOptions[0]);
@@ -85,7 +90,7 @@ export default function AIStudio() {
                     <button onClick={run} disabled={loading || !prompt.trim()} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50">
                         {loading ? <Loader2Icon className="size-4 animate-spin" /> : <WandSparklesIcon className="size-4" />} Generate {active.label.toLowerCase()}
                     </button>
-                    <p className="text-xs text-slate-400 text-center mt-2">Uses 1 of {currentUser.aiCredits} AI credits</p>
+                    <p className="text-xs text-slate-400 text-center mt-2">Uses 1 of {aiCredits} AI credits</p>
                 </div>
 
                 {/* Output */}

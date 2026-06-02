@@ -2,14 +2,16 @@ import { useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
-import { posts, truncate } from "../../lib/dashboard";
+import { truncate } from "../../lib/dashboard";
+import { usePosts } from "../../hooks/useData";
 import type { Post } from "../../lib/types";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function Calendar() {
-    // Seed on the month with the most mock data (May 2026).
-    const [cursor, setCursor] = useState(new Date(2026, 4, 1));
+    const { data: posts = [] } = usePosts();
+    const now = new Date();
+    const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
 
     const year = cursor.getFullYear();
     const month = cursor.getMonth();

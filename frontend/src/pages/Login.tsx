@@ -1,22 +1,34 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MailIcon, LockIcon, ArrowRightIcon, User2Icon } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { apiErrorMessage } from "../lib/api";
 
 export default function Login() {
     const [loginState, setLoginState] = useState(true);
     const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("demo@socialengine.app");
+    const [password, setPassword] = useState("demo1234");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const navigate = useNavigate();
+    const { login, register } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
+        setError("");
+        try {
+            if (loginState) {
+                await login(email, password);
+            } else {
+                await register(name, email, password);
+            }
             navigate("/dashboard");
-        }, 1000);
+        } catch (err) {
+            setError(apiErrorMessage(err, "Could not sign in"));
+            setLoading(false);
+        }
     };
 
     return (
@@ -54,6 +66,8 @@ export default function Login() {
                                 <input type="password" required placeholder="********" className="w-full pl-10 pr-4 py-2.5 bg-slate-50 outline-slate-300 border border-slate-200 rounded-full" value={password} onChange={(e) => setPassword(e.target.value)} />
                             </div>
                         </div>
+
+                        {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
 
                         <button type="submit" disabled={loading} className="w-full py-2.5 px-4 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                             {loading ? (

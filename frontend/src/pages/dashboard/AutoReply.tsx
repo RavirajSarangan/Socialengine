@@ -1,15 +1,14 @@
-import { useState } from "react";
 import { MessageSquareReplyIcon, SparklesIcon, PlusIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
-import { autoReplyRules } from "../../lib/dashboard";
-import type { AutoReplyRule } from "../../lib/types";
+import { useAutoReply, useToggleRule } from "../../hooks/useData";
 
 export default function AutoReply() {
-    const [rules, setRules] = useState<AutoReplyRule[]>(autoReplyRules);
+    const { data: rules = [] } = useAutoReply();
+    const toggleRule = useToggleRule();
 
-    function toggle(id: string) {
-        setRules((rs) => rs.map((r) => (r._id === id ? { ...r, enabled: !r.enabled } : r)));
+    function toggle(id: string, enabled: boolean) {
+        toggleRule.mutate({ id, enabled: !enabled });
     }
 
     return (
@@ -44,7 +43,7 @@ export default function AutoReply() {
                             </div>
                             <p className="text-sm text-slate-500 mt-1.5">{r.instructions}</p>
                         </div>
-                        <button onClick={() => toggle(r._id)} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${r.enabled ? "bg-red-500" : "bg-slate-200"}`} aria-label="toggle rule">
+                        <button onClick={() => toggle(r._id, r.enabled)} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${r.enabled ? "bg-red-500" : "bg-slate-200"}`} aria-label="toggle rule">
                             <span className={`absolute top-0.5 size-5 bg-white rounded-full transition-all ${r.enabled ? "left-5.5" : "left-0.5"}`} />
                         </button>
                     </div>

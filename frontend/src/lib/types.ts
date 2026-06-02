@@ -1,3 +1,12 @@
+export interface AuthUser {
+    _id: string;
+    name: string;
+    email: string;
+    plan: string;
+    aiCredits: number;
+    aiCreditsTotal: number;
+}
+
 export type PlatformId = "twitter" | "linkedin" | "facebook" | "instagram";
 
 export type PostStatus = "draft" | "scheduled" | "published" | "failed";

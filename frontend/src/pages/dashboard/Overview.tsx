@@ -4,10 +4,19 @@ import PageHeader from "../../components/dashboard/PageHeader";
 import StatCard from "../../components/dashboard/StatCard";
 import PostCard from "../../components/dashboard/PostCard";
 import ActivityItem from "../../components/dashboard/ActivityItem";
-import { activity, getStats, posts } from "../../lib/dashboard";
+import { useAnalytics, usePosts, useActivity } from "../../hooks/useData";
 
 export default function Overview() {
-    const stats = getStats();
+    const { data: analytics } = useAnalytics();
+    const { data: posts = [] } = usePosts();
+    const { data: activity = [] } = useActivity();
+
+    const stats = {
+        scheduled: analytics?.scheduled ?? 0,
+        published: analytics?.published ?? 0,
+        accounts: analytics?.accounts ?? 0,
+        aiRules: analytics?.aiRules ?? 0,
+    };
     const upcoming = posts
         .filter((p) => p.status === "scheduled")
         .sort((a, b) => +new Date(a.scheduledFor) - +new Date(b.scheduledFor))

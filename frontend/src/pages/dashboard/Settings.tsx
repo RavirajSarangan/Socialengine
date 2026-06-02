@@ -1,9 +1,17 @@
 import { Link } from "react-router-dom";
 import { UserIcon, SparklesIcon, CreditCardIcon, KeyIcon, ArrowRightIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
-import { currentUser } from "../../lib/dashboard";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Settings() {
+    const { user } = useAuth();
+    const currentUser = {
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        plan: user?.plan ?? "Starter",
+        aiCredits: user?.aiCredits ?? 0,
+        aiCreditsTotal: user?.aiCreditsTotal ?? 200,
+    };
     const pct = Math.round((currentUser.aiCredits / currentUser.aiCreditsTotal) * 100);
 
     return (

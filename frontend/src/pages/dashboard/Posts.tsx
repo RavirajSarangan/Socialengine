@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PenSquareIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PostCard from "../../components/dashboard/PostCard";
-import { posts } from "../../lib/dashboard";
+import { usePosts } from "../../hooks/useData";
 import type { PostStatus } from "../../lib/types";
 
 const FILTERS: { id: "all" | PostStatus; label: string }[] = [
@@ -16,6 +16,7 @@ const FILTERS: { id: "all" | PostStatus; label: string }[] = [
 
 export default function Posts() {
     const [filter, setFilter] = useState<"all" | PostStatus>("all");
+    const { data: posts = [], isLoading } = usePosts();
 
     const filtered = posts
         .filter((p) => filter === "all" || p.status === filter)
@@ -49,7 +50,7 @@ export default function Posts() {
                     <PostCard key={p._id} post={p} />
                 ))}
             </div>
-            {filtered.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">No posts match this filter.</div>}
+            {filtered.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">{isLoading ? "Loading posts…" : "No posts match this filter."}</div>}
         </>
     );
 }
