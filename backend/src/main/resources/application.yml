@@ -17,6 +17,7 @@ server:
 
 app:
   client-url: ${CLIENT_URL:http://localhost:5173}
+  admin-emails: ${ADMIN_EMAILS:}
   jwt:
     secret: ${JWT_SECRET:change-me-dev-secret-change-me-dev-secret}
     expiration-ms: 86400000

@@ -15,7 +15,12 @@ public final class Mappers {
     }
 
     public static UserDto user(User u) {
-        return new UserDto(u.getId(), u.getName(), u.getEmail(), u.getPlan(), u.getAiCredits(), u.getAiCreditsTotal());
+        return new UserDto(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getPlan(), u.getAiCredits(), u.getAiCreditsTotal());
+    }
+
+    public static AdminUserDto adminUser(User u) {
+        return new AdminUserDto(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getPlan(),
+                u.getAiCredits(), u.getAiCreditsTotal(), iso(u.getCreatedAt()));
     }
 
     public static PostDto post(Post p) {

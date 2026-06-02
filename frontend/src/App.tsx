@@ -2,7 +2,10 @@ import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
 import Overview from "./pages/dashboard/Overview";
 import Composer from "./pages/dashboard/Composer";
 import Calendar from "./pages/dashboard/Calendar";
@@ -33,6 +36,10 @@ export default function App() {
                 <Route path="activity" element={<Activity />} />
                     <Route path="auto-reply" element={<AutoReply />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route element={<AdminRoute />}>
+                        <Route path="admin" element={<AdminDashboard />} />
+                        <Route path="admin/users" element={<AdminUsers />} />
+                    </Route>
                 </Route>
             </Route>
         </Routes>

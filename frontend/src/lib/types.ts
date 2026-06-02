@@ -2,6 +2,7 @@ export interface AuthUser {
     _id: string;
     name: string;
     email: string;
+    role?: string;
     plan: string;
     aiCredits: number;
     aiCreditsTotal: number;

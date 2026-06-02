@@ -14,6 +14,7 @@ public class User {
     @Indexed(unique = true)
     private String email;
     private String passwordHash;
+    private String role = "user";        // user | admin
     private String plan = "Pro";
     private int aiCredits = 200;
     private int aiCreditsTotal = 200;
@@ -28,6 +29,8 @@ public class User {
     public void setEmail(String email) { this.email = email; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
     public String getPlan() { return plan; }
     public void setPlan(String plan) { this.plan = plan; }
     public int getAiCredits() { return aiCredits; }

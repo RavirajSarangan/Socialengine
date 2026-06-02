@@ -15,7 +15,14 @@ public final class Dtos {
     public record LoginRequest(@Email String email, @NotBlank String password) {}
     public record AuthResponse(String token, UserDto user) {}
     public record UserDto(@JsonProperty("_id") String id, String name, String email,
-                          String plan, int aiCredits, int aiCreditsTotal) {}
+                          String role, String plan, int aiCredits, int aiCreditsTotal) {}
+
+    // ---- Admin ----
+    public record AdminUserDto(@JsonProperty("_id") String id, String name, String email, String role,
+                               String plan, int aiCredits, int aiCreditsTotal, String createdAt) {}
+    public record AdminStatsDto(long users, long admins, long posts, long accounts, long generations,
+                                long media, java.util.Map<String, Long> byPlan) {}
+    public record AdminUpdateUserRequest(String role, String plan, Integer aiCredits, Integer aiCreditsTotal) {}
 
     // ---- Posts ----
     public record CreatePostRequest(String content, List<String> platforms, String mediaUrl,

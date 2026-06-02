@@ -10,7 +10,7 @@ const testimonials = [
 
 function Card({ t }: { t: (typeof testimonials)[number] }) {
     return (
-        <div className="w-[340px] shrink-0 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4 shadow-sm">
+        <div className="w-85 shrink-0 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4 shadow-sm">
             <div className="flex gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} className="size-3.5 fill-amber-400 text-amber-400" />)}
             </div>

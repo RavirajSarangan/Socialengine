@@ -56,7 +56,7 @@ export default function Hero() {
                 <div className="relative animate-float">
                     <div className="absolute -inset-x-10 -top-6 bottom-0 bg-linear-to-t from-red-500/10 to-transparent blur-2xl pointer-events-none" />
                     <div className="relative rounded-t-2xl overflow-hidden border border-gray-200/80 border-b-0 shadow-[0_30px_80px_-20px_rgba(15,23,42,0.25)]">
-                        <div className="flex items-center gap-2 px-4 py-3 bg-[#f0f0f0] border-b border-black/[0.06]">
+                        <div className="flex items-center gap-2 px-4 py-3 bg-[#f0f0f0] border-b border-black/6">
                             <div className="w-3 h-3 rounded-full bg-red-400" />
                             <div className="w-3 h-3 rounded-full bg-amber-400" />
                             <div className="w-3 h-3 rounded-full bg-emerald-400" />
@@ -65,13 +65,13 @@ export default function Hero() {
                         <div className="p-6 bg-[#f7f7f7]">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                                 {stats.map((s) => (
-                                    <div key={s.label} className="rounded-xl p-4 bg-white border border-black/[0.06]">
+                                    <div key={s.label} className="rounded-xl p-4 bg-white border border-black/6">
                                         <div className="text-2xl font-bold text-gray-900 tabular-nums">{s.val}</div>
                                         <div className="text-xs text-gray-400 mt-1">{s.label}</div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="rounded-xl p-4 space-y-3 bg-white border border-black/[0.06]">
+                            <div className="rounded-xl p-4 space-y-3 bg-white border border-black/6">
                                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recent Activity</div>
                                 {activity.map((item) => (
                                     <div key={item.text} className="flex items-center gap-3">

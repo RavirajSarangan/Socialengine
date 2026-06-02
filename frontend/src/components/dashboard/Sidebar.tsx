@@ -1,6 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
-import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon, ImagesIcon } from "lucide-react";
+import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon, ImagesIcon, ShieldIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 interface NavItem {
     to: string;
@@ -29,6 +30,10 @@ interface Props {
 }
 
 export default function Sidebar({ open, onClose }: Props) {
+    const { user } = useAuth();
+    const nav = user?.role === "admin"
+        ? [...NAV, { to: "/dashboard/admin", label: "Admin", icon: ShieldIcon } as NavItem]
+        : NAV;
     return (
         <>
             {open && <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={onClose} />}
@@ -36,7 +41,7 @@ export default function Sidebar({ open, onClose }: Props) {
                 <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
                     <Link to="/" className="flex items-center gap-2">
                         <img src="/logo.svg" alt="logo" className="size-7" />
-                        <span className="text-xl font-medium font-serif text-slate-800">Scheduler</span>
+                        <span className="text-xl font-medium font-serif text-slate-800">Socialengine</span>
                     </Link>
                     <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-700">
                         <XIcon className="size-5" />
@@ -44,7 +49,7 @@ export default function Sidebar({ open, onClose }: Props) {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                    {NAV.map(({ to, label, icon: Icon, end }) => (
+                    {nav.map(({ to, label, icon: Icon, end }) => (
                         <NavLink
                             key={to}
                             to={to}
