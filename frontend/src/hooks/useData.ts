@@ -11,11 +11,18 @@ export interface AnalyticsSummary {
     engagements: number;
 }
 
+export interface PostMediaInput {
+    url: string;
+    type: string;
+    posterUrl?: string;
+}
+
 export interface CreatePostInput {
     content: string;
     platforms: string[];
     mediaUrl?: string;
     mediaType?: string;
+    media?: PostMediaInput[];
     scheduledFor?: string;
     status?: string;
 }
@@ -27,6 +34,7 @@ export const qk = {
     generations: ["generations"] as const,
     analytics: ["analytics"] as const,
     autoReply: ["auto-reply"] as const,
+    media: ["media"] as const,
 };
 
 export function usePosts() {
@@ -56,6 +64,17 @@ export function useCreatePost() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: qk.posts });
             qc.invalidateQueries({ queryKey: qk.activity });
+            qc.invalidateQueries({ queryKey: qk.analytics });
+        },
+    });
+}
+
+export function useDuplicatePost() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => (await api.post<Post>(`/posts/${id}/duplicate`)).data,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: qk.posts });
             qc.invalidateQueries({ queryKey: qk.analytics });
         },
     });
@@ -100,5 +119,37 @@ export function useCreateRule() {
             qc.invalidateQueries({ queryKey: qk.autoReply });
             qc.invalidateQueries({ queryKey: qk.analytics });
         },
+    });
+}
+
+// ---- AI generation (OpenAI captions/images, ElevenLabs voice) ----
+
+export interface AiResult {
+    generation: Generation;
+    remainingCredits: number;
+}
+
+export function useGenerateCaption() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { prompt: string; tone?: string; platforms?: string[] }) =>
+            (await api.post<AiResult>("/ai/caption", input)).data,
+        onSuccess: () => qc.invalidateQueries({ queryKey: qk.generations }),
+    });
+}
+
+export function useGenerateImage() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { prompt: string }) => (await api.post<AiResult>("/ai/image", input)).data,
+        onSuccess: () => qc.invalidateQueries({ queryKey: qk.generations }),
+    });
+}
+
+export function useGenerateVoice() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { text: string; voiceId: string }) => (await api.post<AiResult>("/ai/voice", input)).data,
+        onSuccess: () => qc.invalidateQueries({ queryKey: qk.generations }),
     });
 }

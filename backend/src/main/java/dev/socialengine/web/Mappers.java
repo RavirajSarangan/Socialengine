@@ -4,6 +4,7 @@ import dev.socialengine.domain.*;
 import dev.socialengine.web.dto.Dtos.*;
 
 import java.time.Instant;
+import java.util.List;
 
 /** Maps domain documents to API DTOs (null-safe ISO-8601 date strings). */
 public final class Mappers {
@@ -18,14 +19,21 @@ public final class Mappers {
     }
 
     public static PostDto post(Post p) {
+        List<MediaItemDto> media = p.getMedia() == null ? null
+                : p.getMedia().stream().map(m -> new MediaItemDto(m.getUrl(), m.getType(), m.getPosterUrl())).toList();
         return new PostDto(p.getId(), p.getUserId(), p.getContent(), p.getPlatforms(),
-                p.getMediaUrl(), p.getMediaType(), iso(p.getScheduledFor()), p.getStatus(),
+                p.getMediaUrl(), p.getMediaType(), media, iso(p.getScheduledFor()), p.getStatus(),
                 iso(p.getPublishedAt()), iso(p.getCreatedAt()), iso(p.getUpdatedAt()));
     }
 
     public static AccountDto account(SocialAccount a) {
         return new AccountDto(a.getId(), a.getUserId(), a.getHandle(), a.getPlatform(),
                 a.getStatus(), a.getProviderAccountId(), iso(a.getCreatedAt()), iso(a.getUpdatedAt()));
+    }
+
+    public static MediaAssetDto mediaAsset(MediaAsset a) {
+        return new MediaAssetDto(a.getId(), a.getUserId(), a.getUrl(), a.getType(), a.getPosterUrl(),
+                a.getName(), a.getSize(), a.getSource(), iso(a.getCreatedAt()));
     }
 
     public static GenerationDto generation(Generation g) {

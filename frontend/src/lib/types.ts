@@ -13,6 +13,24 @@ export type PostStatus = "draft" | "scheduled" | "published" | "failed";
 
 export type MediaType = "image" | "audio" | "video";
 
+export interface MediaItem {
+    url: string;
+    type: MediaType;
+    posterUrl?: string;
+}
+
+export interface MediaAsset {
+    _id: string;
+    user: string;
+    url: string;
+    type: MediaType;
+    posterUrl?: string;
+    name?: string;
+    size: number;
+    source: "upload" | "ai";
+    createdAt: string;
+}
+
 export interface Post {
     _id: string;
     user: string;
@@ -22,6 +40,7 @@ export interface Post {
     status: PostStatus;
     mediaUrl?: string;
     mediaType?: MediaType;
+    media?: MediaItem[];
     createdAt: string;
     updatedAt: string;
 }

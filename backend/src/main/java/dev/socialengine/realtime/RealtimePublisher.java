@@ -35,4 +35,14 @@ public class RealtimePublisher {
         messaging.convertAndSend("/topic/activity",
                 Map.of("type", "activity:created", "userId", userId, "activity", activity));
     }
+
+    /** Tell clients the AI generation history changed (and credits were spent). */
+    public void generationsChanged(String userId) {
+        messaging.convertAndSend("/topic/generations", Map.of("type", "generations:changed", "userId", userId));
+    }
+
+    /** Tell clients the media library changed. */
+    public void mediaChanged(String userId) {
+        messaging.convertAndSend("/topic/media", Map.of("type", "media:changed", "userId", userId));
+    }
 }

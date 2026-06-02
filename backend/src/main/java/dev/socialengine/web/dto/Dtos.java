@@ -19,9 +19,9 @@ public final class Dtos {
 
     // ---- Posts ----
     public record CreatePostRequest(String content, List<String> platforms, String mediaUrl,
-                                    String mediaType, String scheduledFor, String status) {}
+                                    String mediaType, List<MediaItemDto> media, String scheduledFor, String status) {}
     public record PostDto(@JsonProperty("_id") String id, String user, String content,
-                          List<String> platforms, String mediaUrl, String mediaType,
+                          List<String> platforms, String mediaUrl, String mediaType, List<MediaItemDto> media,
                           String scheduledFor, String status, String publishedAt,
                           String createdAt, String updatedAt) {}
 
@@ -35,6 +35,18 @@ public final class Dtos {
     public record GenerationDto(@JsonProperty("_id") String id, String user, String prompt,
                                 String content, String mediaUrl, String mediaType, String tone,
                                 String type, String createdAt, String updatedAt) {}
+
+    // ---- AI generation ----
+    public record CaptionRequest(@NotBlank String prompt, String tone, List<String> platforms) {}
+    public record ImageRequest(@NotBlank String prompt) {}
+    public record VoiceRequest(@NotBlank String text, String voiceId) {}
+    public record AiResultDto(GenerationDto generation, int remainingCredits) {}
+
+    // ---- Media library ----
+    public record MediaAssetDto(@JsonProperty("_id") String id, String user, String url, String type,
+                                String posterUrl, String name, long size, String source, String createdAt) {}
+    public record UpdatePosterRequest(String posterUrl) {}
+    public record MediaItemDto(String url, String type, String posterUrl) {}
 
     // ---- Activity ----
     public record RelatedPostDto(@JsonProperty("_id") String id, String content) {}

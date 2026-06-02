@@ -1,50 +1,138 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { SparklesIcon, ImageIcon, AudioLinesIcon, CalendarClockIcon, SendIcon, Loader2Icon, XIcon } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { SparklesIcon, ImageIcon, AudioLinesIcon, CalendarClockIcon, SendIcon, Loader2Icon, XIcon, UploadCloudIcon, SmileIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import PlatformBadge from "../../components/dashboard/PlatformBadge";
-import { PLATFORMS, toneOptions } from "../../lib/dashboard";
+import MediaPreview from "../../components/dashboard/MediaPreview";
+import { PLATFORMS, toneOptions, captionLimit, EMOJIS } from "../../lib/dashboard";
 import { useAuth } from "../../context/AuthContext";
-import { useCreatePost } from "../../hooks/useData";
+import { useCreatePost, useGenerateCaption, useGenerateImage, useGenerateVoice } from "../../hooks/useData";
+import { useUploadMedia } from "../../hooks/useMedia";
+import { apiErrorMessage } from "../../lib/api";
+import type { MediaItem, MediaType } from "../../lib/types";
 
 export default function Composer() {
-    const { user } = useAuth();
+    const { user, refresh } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const createPost = useCreatePost();
+    const caption = useGenerateCaption();
+    const image = useGenerateImage();
+    const voiceGen = useGenerateVoice();
+    const uploadMedia = useUploadMedia();
     const [content, setContent] = useState("");
     const [selected, setSelected] = useState<string[]>(["instagram"]);
-    const [mediaUrl, setMediaUrl] = useState("");
+    const [media, setMedia] = useState<MediaItem[]>(() => {
+        const preset = (location.state as { media?: MediaItem } | null)?.media;
+        return preset ? [preset] : [];
+    });
     const [tone, setTone] = useState(toneOptions[0]);
     const [schedule, setSchedule] = useState("");
     const [generating, setGenerating] = useState<null | "text" | "image" | "voice">(null);
+    const [uploading, setUploading] = useState(false);
     const [aiError, setAiError] = useState("");
+    const [showEmoji, setShowEmoji] = useState(false);
 
     function togglePlatform(id: string) {
         setSelected((s) => (s.includes(id) ? s.filter((p) => p !== id) : [...s, id]));
     }
 
-    function submit() {
+    function removeMedia(index: number) {
+        setMedia((m) => m.filter((_, i) => i !== index));
+    }
+
+    /** Capture a poster frame from a video file (client-side, no ffmpeg) and upload it as an image. */
+    async function capturePoster(file: File): Promise<string | undefined> {
+        return new Promise((resolve) => {
+            const video = document.createElement("video");
+            video.preload = "metadata";
+            video.muted = true;
+            video.src = URL.createObjectURL(file);
+            video.onloadeddata = () => {
+                video.currentTime = Math.min(1, video.duration || 0);
+            };
+            video.onseeked = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) return resolve(undefined);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(async (blob) => {
+                    URL.revokeObjectURL(video.src);
+                    if (!blob) return resolve(undefined);
+                    try {
+                        const asset = await uploadMedia.mutateAsync(new File([blob], "poster.png", { type: "image/png" }));
+                        resolve(asset.url);
+                    } catch {
+                        resolve(undefined);
+                    }
+                }, "image/png");
+            };
+            video.onerror = () => resolve(undefined);
+        });
+    }
+
+    async function onFiles(files: FileList | null) {
+        if (!files || files.length === 0) return;
+        setAiError("");
+        setUploading(true);
+        try {
+            for (const file of Array.from(files)) {
+                const type: MediaType = file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "image";
+                const asset = await uploadMedia.mutateAsync(file);
+                const posterUrl = type === "video" ? await capturePoster(file) : undefined;
+                setMedia((m) => [...m, { url: asset.url, type, posterUrl }]);
+            }
+        } catch (e) {
+            setAiError(apiErrorMessage(e, "Upload failed"));
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    function submit(status: "draft" | "scheduled" | "published") {
         const scheduledFor = schedule ? new Date(schedule).toISOString() : new Date().toISOString();
         createPost.mutate(
             {
                 content,
                 platforms: selected,
-                mediaUrl: mediaUrl || undefined,
-                mediaType: mediaUrl ? "image" : undefined,
+                media: media.length ? media : undefined,
                 scheduledFor,
-                status: schedule ? "scheduled" : "published",
+                status,
             },
             { onSuccess: () => navigate("/dashboard/posts") }
         );
     }
 
-    function generate(kind: "text" | "image" | "voice") {
+    async function generate(kind: "text" | "image" | "voice") {
+        if (!content.trim()) {
+            setAiError("Type a short idea or brief first, then generate.");
+            return;
+        }
+        setAiError("");
         setGenerating(kind);
-        setAiError("AI generation API is not connected yet.");
-        setGenerating(null);
+        try {
+            if (kind === "text") {
+                const r = await caption.mutateAsync({ prompt: content, tone, platforms: selected });
+                setContent(r.generation.content);
+            } else if (kind === "image") {
+                const r = await image.mutateAsync({ prompt: content });
+                if (r.generation.mediaUrl) setMedia((m) => [...m, { url: r.generation.mediaUrl!, type: "image" }]);
+            } else {
+                const r = await voiceGen.mutateAsync({ text: content, voiceId: "rachel" });
+                if (r.generation.mediaUrl) setMedia((m) => [...m, { url: r.generation.mediaUrl!, type: "audio" }]);
+            }
+            await refresh(); // refresh AI-credit count
+        } catch (e) {
+            setAiError(apiErrorMessage(e, "Generation failed"));
+        } finally {
+            setGenerating(null);
+        }
     }
 
-    const remaining = 2200 - content.length;
+    const limit = captionLimit(selected);
+    const remaining = limit - content.length;
 
     return (
         <>
@@ -62,9 +150,20 @@ export default function Composer() {
                             placeholder="What do you want to share?"
                             className="w-full resize-none text-sm bg-slate-50 border border-slate-200 rounded-xl p-3.5 outline-none focus:border-red-300 focus:bg-white transition-colors"
                         />
-                        <div className="flex items-center justify-between mt-2 text-xs text-slate-400">
-                            <span>AI tone:</span>
-                            <span className={remaining < 0 ? "text-red-500" : ""}>{remaining} characters left</span>
+                        <div className="flex items-center justify-between mt-2">
+                            <div className="relative">
+                                <button onClick={() => setShowEmoji((v) => !v)} className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800">
+                                    <SmileIcon className="size-4" /> Emoji
+                                </button>
+                                {showEmoji && (
+                                    <div className="absolute z-10 mt-2 w-56 grid grid-cols-8 gap-1 bg-white border border-slate-200 rounded-xl p-2 shadow-sm">
+                                        {EMOJIS.map((e) => (
+                                            <button key={e} onClick={() => { setContent((c) => c + e); setShowEmoji(false); }} className="text-lg hover:bg-slate-50 rounded">{e}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <span className={`text-xs ${remaining < 0 ? "text-red-500" : "text-slate-400"}`}>{remaining} / {limit}</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mt-2">
                             {toneOptions.map((t) => (
@@ -90,18 +189,34 @@ export default function Composer() {
                         {aiError && <p className="mt-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">{aiError}</p>}
                     </div>
 
-                    {/* Media */}
-                    {mediaUrl && (
-                        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-medium text-slate-700">Media</h3>
-                                <button onClick={() => setMediaUrl("")} className="text-slate-400 hover:text-red-500">
-                                    <XIcon className="size-4" />
-                                </button>
+                    {/* Media upload + items */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h3 className="text-sm font-medium text-slate-700 mb-3">Media</h3>
+                        <label
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => { e.preventDefault(); onFiles(e.dataTransfer.files); }}
+                            className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 rounded-xl py-7 text-center cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-colors"
+                        >
+                            {uploading ? <Loader2Icon className="size-5 animate-spin text-red-400" /> : <UploadCloudIcon className="size-5 text-slate-400" />}
+                            <span className="text-sm text-slate-500">Drop images / videos / audio, or click to upload</span>
+                            <span className="text-xs text-slate-400">Up to 50&nbsp;MB each</span>
+                            <input type="file" accept="image/*,video/*,audio/*" multiple className="hidden" onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }} />
+                        </label>
+
+                        {media.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2.5 mt-3">
+                                {media.map((m, i) => (
+                                    <div key={`${m.url}-${i}`} className="relative group">
+                                        <MediaPreview url={m.url} type={m.type} posterUrl={m.posterUrl} className="w-full h-24 object-cover rounded-xl bg-slate-100" />
+                                        <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 size-6 grid place-items-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <XIcon className="size-3.5" />
+                                        </button>
+                                        <span className="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white rounded px-1.5 py-0.5 capitalize">{m.type}</span>
+                                    </div>
+                                ))}
                             </div>
-                            <img src={mediaUrl} alt="" className="w-full max-h-72 object-cover rounded-xl" />
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Platforms + schedule */}
                     <div className="bg-white rounded-2xl border border-slate-200 p-5">
@@ -129,10 +244,10 @@ export default function Composer() {
                         </div>
 
                         <div className="flex gap-3 mt-5">
-                            <button onClick={submit} className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0 || createPost.isPending}>
+                            <button onClick={() => submit(schedule ? "scheduled" : "published")} className="flex-1 inline-flex items-center justify-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all disabled:opacity-50" disabled={!content || selected.length === 0 || remaining < 0 || createPost.isPending}>
                                 {createPost.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <SendIcon className="size-4" />} {schedule ? "Schedule post" : "Publish now"}
                             </button>
-                            <button onClick={() => createPost.mutate({ content, platforms: selected, mediaUrl: mediaUrl || undefined, mediaType: mediaUrl ? "image" : undefined, status: "draft" }, { onSuccess: () => navigate("/dashboard/posts") })} disabled={!content} className="px-5 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Save draft</button>
+                            <button onClick={() => submit("draft")} disabled={!content || createPost.isPending} className="px-5 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Save draft</button>
                         </div>
                     </div>
                 </div>
@@ -150,7 +265,8 @@ export default function Composer() {
                                 </div>
                             </div>
                         </div>
-                        {mediaUrl && <img src={mediaUrl} alt="" className="w-full max-h-80 object-cover" />}
+                        {media[0] && <MediaPreview url={media[0].url} type={media[0].type} posterUrl={media[0].posterUrl} className="w-full max-h-80 object-cover" />}
+                        {media.length > 1 && <div className="px-4 pt-2 text-xs text-slate-400">+{media.length - 1} more attached</div>}
                         <div className="p-4">
                             <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{content || <span className="text-slate-300">Your caption preview appears here…</span>}</p>
                         </div>

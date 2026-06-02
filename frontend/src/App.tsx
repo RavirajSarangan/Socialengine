@@ -8,6 +8,7 @@ import Composer from "./pages/dashboard/Composer";
 import Calendar from "./pages/dashboard/Calendar";
 import Posts from "./pages/dashboard/Posts";
 import Accounts from "./pages/dashboard/Accounts";
+import Media from "./pages/dashboard/Media";
 import AIStudio from "./pages/dashboard/AIStudio";
 import Analytics from "./pages/dashboard/Analytics";
 import Activity from "./pages/dashboard/Activity";
@@ -26,6 +27,7 @@ export default function App() {
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="posts" element={<Posts />} />
                 <Route path="accounts" element={<Accounts />} />
+                <Route path="media" element={<Media />} />
                 <Route path="ai-studio" element={<AIStudio />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="activity" element={<Activity />} />

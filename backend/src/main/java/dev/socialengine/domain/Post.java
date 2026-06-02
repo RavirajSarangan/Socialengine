@@ -13,8 +13,9 @@ public class Post {
     private String userId;
     private String content;
     private List<String> platforms;
-    private String mediaUrl;
+    private String mediaUrl;             // legacy single-media (mirrors media[0])
     private String mediaType;            // image | audio | video
+    private List<MediaItem> media;       // multiple media per post
     private Instant scheduledFor;
     private String status = "draft";     // draft | scheduled | published | failed
     private Instant publishedAt;
@@ -33,6 +34,8 @@ public class Post {
     public void setMediaUrl(String mediaUrl) { this.mediaUrl = mediaUrl; }
     public String getMediaType() { return mediaType; }
     public void setMediaType(String mediaType) { this.mediaType = mediaType; }
+    public List<MediaItem> getMedia() { return media; }
+    public void setMedia(List<MediaItem> media) { this.media = media; }
     public Instant getScheduledFor() { return scheduledFor; }
     public void setScheduledFor(Instant scheduledFor) { this.scheduledFor = scheduledFor; }
     public String getStatus() { return status; }

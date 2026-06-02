@@ -1,5 +1,5 @@
 import { NavLink, Link } from "react-router-dom";
-import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon } from "lucide-react";
+import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon, ImagesIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
     { to: "/dashboard/calendar", label: "Calendar", icon: CalendarDaysIcon },
     { to: "/dashboard/posts", label: "Posts", icon: FileTextIcon },
     { to: "/dashboard/accounts", label: "Accounts", icon: Share2Icon },
+    { to: "/dashboard/media", label: "Media", icon: ImagesIcon },
     { to: "/dashboard/ai-studio", label: "AI Studio", icon: SparklesIcon },
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3Icon },
     { to: "/dashboard/activity", label: "Activity", icon: ActivityIcon },

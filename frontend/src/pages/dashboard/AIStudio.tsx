@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { SparklesIcon, ImageIcon, AudioLinesIcon, Loader2Icon, WandSparklesIcon, CopyIcon, PlayIcon } from "lucide-react";
+import { SparklesIcon, ImageIcon, AudioLinesIcon, Loader2Icon, WandSparklesIcon, CopyIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import { toneOptions, truncate, voiceOptions } from "../../lib/dashboard";
 import { useAuth } from "../../context/AuthContext";
-import { useGenerations } from "../../hooks/useData";
+import { useGenerations, useGenerateCaption, useGenerateImage, useGenerateVoice } from "../../hooks/useData";
+import { API_URL, apiErrorMessage } from "../../lib/api";
 
 type Tab = "caption" | "image" | "voice";
 
@@ -13,33 +14,48 @@ const TABS: { id: Tab; label: string; provider: string; icon: typeof SparklesIco
     { id: "voice", label: "Voiceover", provider: "ElevenLabs", icon: AudioLinesIcon },
 ];
 
-const SAMPLE_TEXT =
-    "Introducing our most requested update yet. ✨ Faster, smarter, and built around how you actually work. Available today for every plan — no upgrade required.\n\n#ProductUpdate #Innovation #BuildInPublic";
+function mediaSrc(url?: string) {
+    if (!url) return "";
+    return url.startsWith("http") ? url : API_URL + url;
+}
 
 export default function AIStudio() {
-    const { user } = useAuth();
+    const { user, refresh } = useAuth();
     const { data: generations = [] } = useGenerations();
     const aiCredits = user?.aiCredits ?? 0;
     const [tab, setTab] = useState<Tab>("caption");
     const [prompt, setPrompt] = useState("");
     const [tone, setTone] = useState(toneOptions[0]);
     const [voice, setVoice] = useState(voiceOptions[0].id);
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<{ text?: string; image?: string; audio?: boolean } | null>(null);
+    const [error, setError] = useState("");
+    const [result, setResult] = useState<{ text?: string; image?: string; audio?: string } | null>(null);
+
+    const caption = useGenerateCaption();
+    const image = useGenerateImage();
+    const voiceGen = useGenerateVoice();
+    const loading = caption.isPending || image.isPending || voiceGen.isPending;
 
     const active = TABS.find((t) => t.id === tab)!;
 
-    /* Phase 4 swaps this simulation for POST /ai/caption | /ai/image | /ai/voice. */
-    function run() {
+    async function run() {
         if (!prompt.trim()) return;
-        setLoading(true);
+        setError("");
         setResult(null);
-        setTimeout(() => {
-            if (tab === "caption") setResult({ text: SAMPLE_TEXT });
-            if (tab === "image") setResult({ image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&q=80" });
-            if (tab === "voice") setResult({ audio: true });
-            setLoading(false);
-        }, 1300);
+        try {
+            if (tab === "caption") {
+                const r = await caption.mutateAsync({ prompt, tone });
+                setResult({ text: r.generation.content });
+            } else if (tab === "image") {
+                const r = await image.mutateAsync({ prompt });
+                setResult({ image: r.generation.mediaUrl });
+            } else {
+                const r = await voiceGen.mutateAsync({ text: prompt, voiceId: voice });
+                setResult({ audio: r.generation.mediaUrl });
+            }
+            await refresh(); // update the AI-credit count
+        } catch (e) {
+            setError(apiErrorMessage(e, "Generation failed"));
+        }
     }
 
     return (
@@ -91,6 +107,7 @@ export default function AIStudio() {
                         {loading ? <Loader2Icon className="size-4 animate-spin" /> : <WandSparklesIcon className="size-4" />} Generate {active.label.toLowerCase()}
                     </button>
                     <p className="text-xs text-slate-400 text-center mt-2">Uses 1 of {aiCredits} AI credits</p>
+                    {error && <p className="mt-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
                 </div>
 
                 {/* Output */}
@@ -104,14 +121,8 @@ export default function AIStudio() {
                             <button className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-500 border border-slate-200 rounded-full px-3 py-1.5 hover:bg-slate-50"><CopyIcon className="size-3.5" /> Copy</button>
                         </div>
                     )}
-                    {result?.image && <img src={result.image} alt="" className="w-full rounded-xl object-cover" />}
-                    {result?.audio && (
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                            <button className="size-10 rounded-full bg-red-500 text-white grid place-items-center"><PlayIcon className="size-4" /></button>
-                            <div className="flex-1 h-1.5 rounded-full bg-slate-200"><div className="h-full w-1/3 rounded-full bg-red-400" /></div>
-                            <span className="text-xs text-slate-400">0:12</span>
-                        </div>
-                    )}
+                    {result?.image && <img src={mediaSrc(result.image)} alt="" className="w-full rounded-xl object-cover" />}
+                    {result?.audio && <audio controls src={mediaSrc(result.audio)} className="w-full mt-1" />}
                 </div>
             </div>
 
@@ -120,10 +131,11 @@ export default function AIStudio() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {generations.slice(0, 6).map((g) => (
                     <div key={g._id} className="bg-white rounded-2xl border border-slate-200 p-4">
-                        {g.mediaUrl && <img src={g.mediaUrl} alt="" className="w-full h-28 object-cover rounded-xl mb-3" />}
+                        {g.mediaUrl && g.mediaType === "audio" && <audio controls src={mediaSrc(g.mediaUrl)} className="w-full mb-3" />}
+                        {g.mediaUrl && g.mediaType !== "audio" && <img src={mediaSrc(g.mediaUrl)} alt="" className="w-full h-28 object-cover rounded-xl mb-3" />}
                         <p className="text-xs text-slate-400 mb-1">{g.prompt}</p>
-                        <p className="text-sm text-slate-600">{truncate(g.content, 90)}</p>
-                        <span className="inline-block mt-2 text-[11px] text-red-500 bg-red-50 rounded-full px-2 py-0.5">{g.tone}</span>
+                        {g.content && <p className="text-sm text-slate-600">{truncate(g.content, 90)}</p>}
+                        {g.tone && <span className="inline-block mt-2 text-[11px] text-red-500 bg-red-50 rounded-full px-2 py-0.5">{g.tone}</span>}
                     </div>
                 ))}
             </div>

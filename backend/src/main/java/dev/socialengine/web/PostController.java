@@ -1,5 +1,6 @@
 package dev.socialengine.web;
 
+import dev.socialengine.domain.MediaItem;
 import dev.socialengine.domain.Post;
 import dev.socialengine.realtime.RealtimePublisher;
 import dev.socialengine.repo.PostRepository;
@@ -44,8 +45,7 @@ public class PostController {
         p.setUserId(userId);
         p.setContent(req.content());
         p.setPlatforms(req.platforms());
-        p.setMediaUrl(req.mediaUrl());
-        p.setMediaType(req.mediaType());
+        applyMedia(p, req);
         p.setScheduledFor(parse(req.scheduledFor()));
         p.setStatus(req.status() == null ? "scheduled" : req.status());
         if ("published".equals(p.getStatus())) {
@@ -65,8 +65,7 @@ public class PostController {
         Post p = owned(userId, id);
         if (req.content() != null) p.setContent(req.content());
         if (req.platforms() != null) p.setPlatforms(req.platforms());
-        if (req.mediaUrl() != null) p.setMediaUrl(req.mediaUrl());
-        if (req.mediaType() != null) p.setMediaType(req.mediaType());
+        applyMedia(p, req);
         if (req.scheduledFor() != null) p.setScheduledFor(parse(req.scheduledFor()));
         if (req.status() != null) p.setStatus(req.status());
         p.setUpdatedAt(Instant.now());
@@ -93,6 +92,39 @@ public class PostController {
                 "Published post to " + String.join(", ", p.getPlatforms() == null ? List.of() : p.getPlatforms()), p);
         realtime.postsChanged(userId);
         return Mappers.post(p);
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PostDto duplicate(@CurrentUserId String userId, @PathVariable String id) {
+        Post src = owned(userId, id);
+        Post copy = new Post();
+        copy.setUserId(userId);
+        copy.setContent(src.getContent());
+        copy.setPlatforms(src.getPlatforms());
+        copy.setMediaUrl(src.getMediaUrl());
+        copy.setMediaType(src.getMediaType());
+        copy.setMedia(src.getMedia());
+        copy.setScheduledFor(src.getScheduledFor());
+        copy.setStatus("draft");
+        copy = posts.save(copy);
+        realtime.postsChanged(userId);
+        return Mappers.post(copy);
+    }
+
+    /** Applies media[] (and keeps the legacy single-media fields in sync from media[0]). */
+    private void applyMedia(Post p, CreatePostRequest req) {
+        if (req.media() != null) {
+            List<MediaItem> items = req.media().stream()
+                    .map(m -> new MediaItem(m.url(), m.type(), m.posterUrl())).toList();
+            p.setMedia(items);
+            if (!items.isEmpty()) {
+                p.setMediaUrl(items.get(0).getUrl());
+                p.setMediaType(items.get(0).getType());
+            }
+        }
+        if (req.mediaUrl() != null) p.setMediaUrl(req.mediaUrl());
+        if (req.mediaType() != null) p.setMediaType(req.mediaType());
     }
 
     private Post owned(String userId, String id) {

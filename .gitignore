@@ -9,6 +9,9 @@ frontend/dist/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 
+# Generated media (AI images/audio)
+backend/uploads/
+
 # Secrets & local config — NEVER commit
 **/.env
 **/.env.local

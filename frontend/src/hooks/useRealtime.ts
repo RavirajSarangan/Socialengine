@@ -53,6 +53,14 @@ export function useRealtime() {
                     qc.invalidateQueries({ queryKey: qk.autoReply });
                     qc.invalidateQueries({ queryKey: qk.analytics });
                 });
+                client.subscribe("/topic/generations", (event) => {
+                    if (!isCurrentUserEvent(event.body)) return;
+                    qc.invalidateQueries({ queryKey: qk.generations });
+                });
+                client.subscribe("/topic/media", (event) => {
+                    if (!isCurrentUserEvent(event.body)) return;
+                    qc.invalidateQueries({ queryKey: qk.media });
+                });
             },
         });
 
