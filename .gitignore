@@ -1,0 +1,24 @@
+# Dependencies
+**/node_modules/
+
+# Frontend build output
+frontend/dist/
+**/.vite/
+
+# Backend build output
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Secrets & local config — NEVER commit
+**/.env
+**/.env.local
+backend/src/main/resources/application-local.yml
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+*.iml
+.vscode/

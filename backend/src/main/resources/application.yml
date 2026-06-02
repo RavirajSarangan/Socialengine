@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: socialengine-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/socialengine}
+      auto-index-creation: true
+
+server:
+  port: 8080
+
+app:
+  client-url: ${CLIENT_URL:http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET:change-me-dev-secret-change-me-dev-secret}
+    expiration-ms: 86400000
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+  elevenlabs:
+    api-key: ${ELEVENLABS_API_KEY:}
+  ayrshare:
+    api-key: ${AYRSHARE_API_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: INFO

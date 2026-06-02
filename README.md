@@ -1,75 +1,41 @@
-# React + TypeScript + Vite
+# Socialengine
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI-powered social media management platform — connect your accounts, generate content with AI, schedule, auto-publish, and track engagement in real time.
 
-Currently, two official plugins are available:
+## Monorepo layout
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+Socialengine/
+├── frontend/   # React 19 + Vite + TypeScript + Tailwind v4 (dashboard SPA)
+└── backend/    # Spring Boot 3 + MongoDB + Spring Security (REST + WebSocket API)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Area | Stack |
+|------|-------|
+| Frontend | React 19, Vite, TypeScript, Tailwind CSS v4, React Router |
+| Backend | Spring Boot 3.4 (Java 21), Spring Web, Spring Data MongoDB, Spring Security (JWT), WebSocket/STOMP |
+| Database | MongoDB (Atlas) |
+| AI | OpenAI (captions + images), ElevenLabs (voiceover) |
+| Publishing | Ayrshare (X / LinkedIn / Facebook / Instagram) |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting started
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
 ```
+
+### Backend
+```bash
+cd backend
+cp .env.example .env   # then fill in MONGODB_URI, JWT_SECRET, OPENAI_API_KEY, ...
+./mvnw spring-boot:run # http://localhost:8080
+```
+
+## Configuration
+
+Backend secrets live in `backend/.env` (git-ignored). See `backend/.env.example` for the full list. **Never commit real keys.**
