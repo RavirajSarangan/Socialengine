@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { UserIcon, SparklesIcon, CreditCardIcon, KeyIcon, ArrowRightIcon } from "lucide-react";
+import { useQuery } from "convex/react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import { useAuth } from "../../context/AuthContext";
-import { api } from "../../lib/api";
+import { api } from "../../../convex/_generated/api";
 
 export default function Settings() {
     const { user } = useAuth();
@@ -16,21 +16,8 @@ export default function Settings() {
     };
     const pct = Math.round((currentUser.aiCredits / currentUser.aiCreditsTotal) * 100);
 
-    const [integrations, setIntegrations] = useState<Record<string, boolean>>({
-        openai: false,
-        elevenlabs: false,
-        ayrshare: false,
-    });
-
-    useEffect(() => {
-        api.get("/health")
-            .then((res) => {
-                if (res.data?.integrations) {
-                    setIntegrations(res.data.integrations);
-                }
-            })
-            .catch(() => {});
-    }, []);
+    const health = useQuery(api.system.health);
+    const integrations: Record<string, boolean> = health?.integrations ?? { openai: false, elevenlabs: false, ayrshare: false };
 
     return (
         <>

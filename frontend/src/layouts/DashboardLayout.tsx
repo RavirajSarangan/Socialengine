@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/dashboard/Sidebar";
 import Topbar from "../components/dashboard/Topbar";
-import { useRealtime } from "../hooks/useRealtime";
 
 export default function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    useRealtime(); // live updates across all dashboard pages
+    // Live updates are automatic — Convex queries are reactive.
 
     return (
         <div className="min-h-screen bg-slate-50 flex">

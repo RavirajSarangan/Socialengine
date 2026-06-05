@@ -3,21 +3,20 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexReactClient } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { AuthProvider } from "./context/AuthContext";
 
-const queryClient = new QueryClient({
-    defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 30_000 } },
-});
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <QueryClientProvider client={queryClient}>
+        <ConvexAuthProvider client={convex}>
             <BrowserRouter>
                 <AuthProvider>
                     <App />
                 </AuthProvider>
             </BrowserRouter>
-        </QueryClientProvider>
+        </ConvexAuthProvider>
     </StrictMode>
 );

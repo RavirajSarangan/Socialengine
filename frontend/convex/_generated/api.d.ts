@@ -25,6 +25,7 @@ import type * as lib_platformMedia from "../lib/platformMedia.js";
 import type * as media from "../media.js";
 import type * as posts from "../posts.js";
 import type * as publish from "../publish.js";
+import type * as system from "../system.js";
 import type * as users from "../users.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   posts: typeof posts;
   publish: typeof publish;
+  system: typeof system;
   users: typeof users;
 }>;
 

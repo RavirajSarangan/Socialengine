@@ -1,10 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 
 export interface AdminStats {
     users: number;
     admins: number;
     posts: number;
+    published: number;
     accounts: number;
     generations: number;
     media: number;
@@ -34,51 +37,44 @@ export interface AdminActivity {
     user: string;
     actionType: string;
     description: string;
-    relatedPost?: {
-        _id: string;
-        content: string;
-    };
+    relatedPost?: { _id: string; content: string };
     createdAt: string;
     updatedAt: string;
 }
 
-const adminKeys = {
-    stats: ["admin", "stats"] as const,
-    users: ["admin", "users"] as const,
-    activities: ["admin", "activities"] as const,
-};
-
 export function useAdminStats() {
-    return useQuery({ queryKey: adminKeys.stats, queryFn: async () => (await api.get<AdminStats>("/admin/stats")).data });
+    const data = useQuery(api.admin.stats) as AdminStats | undefined;
+    return { data, isLoading: data === undefined };
 }
 
 export function useAdminUsers() {
-    return useQuery({ queryKey: adminKeys.users, queryFn: async () => (await api.get<AdminUser[]>("/admin/users")).data });
+    const data = useQuery(api.admin.users) as AdminUser[] | undefined;
+    return { data, isLoading: data === undefined };
 }
 
 export function useAdminActivities() {
-    return useQuery({ queryKey: adminKeys.activities, queryFn: async () => (await api.get<AdminActivity[]>("/admin/activities")).data });
+    const data = useQuery(api.admin.activities) as AdminActivity[] | undefined;
+    return { data, isLoading: data === undefined };
 }
 
 export function useUpdateUser() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: async ({ id, update }: { id: string; update: AdminUserUpdate }) =>
-            (await api.patch<AdminUser>(`/admin/users/${id}`, update)).data,
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: adminKeys.users });
-            qc.invalidateQueries({ queryKey: adminKeys.stats });
-        },
-    });
+    const run = useMutation(api.admin.patchUser);
+    const [isPending, setPending] = useState(false);
+    const [variables, setVariables] = useState<{ id: string; update: AdminUserUpdate } | undefined>(undefined);
+    const mutate = (input: { id: string; update: AdminUserUpdate }) => {
+        setPending(true);
+        setVariables(input);
+        void run({ id: input.id as Id<"users">, ...input.update }).finally(() => setPending(false));
+    };
+    return { mutate, isPending, variables };
 }
 
 export function useDeleteUser() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: async (id: string) => api.delete(`/admin/users/${id}`),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: adminKeys.users });
-            qc.invalidateQueries({ queryKey: adminKeys.stats });
-        },
-    });
+    const run = useMutation(api.admin.removeUser);
+    const [isPending, setPending] = useState(false);
+    const mutate = (id: string) => {
+        setPending(true);
+        void run({ id: id as Id<"users"> }).finally(() => setPending(false));
+    };
+    return { mutate, isPending };
 }

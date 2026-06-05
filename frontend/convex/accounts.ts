@@ -2,6 +2,7 @@ import { query, mutation, action, internalQuery, internalMutation } from "./_gen
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireUserId, iso } from "./lib/guards";
 
 function shape(a: Doc<"socialAccounts">) {
@@ -71,7 +72,8 @@ export const _setStatus = internalMutation({
 export const verify = action({
     args: {},
     handler: async (ctx): Promise<{ verified: boolean }> => {
-        const userId = await requireUserId(ctx);
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
         const key = process.env.AYRSHARE_API_KEY;
         const accounts = await ctx.runQuery(internal.accounts._forUser, { userId });
         if (!key) return { verified: false }; // simulated: leave statuses unchanged
@@ -81,7 +83,7 @@ export const verify = action({
             const data = await res.json();
             connected = (data.activeSocialAccounts ?? []).map((s: string) => s.toLowerCase());
         } catch {
-            connected = [];
+            // leave connected empty on error
         }
         for (const a of accounts) {
             await ctx.runMutation(internal.accounts._setStatus, { id: a._id, status: connected.includes(a.platform.toLowerCase()) ? "connected" : "pending" });

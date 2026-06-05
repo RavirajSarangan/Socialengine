@@ -1,42 +1,49 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import type { MediaAsset } from "../lib/types";
 
-export const mediaKey = ["media"] as const;
-
 export function useMediaAssets() {
-    return useQuery({ queryKey: mediaKey, queryFn: async () => (await api.get<MediaAsset[]>("/media")).data });
+    const data = useQuery(api.media.list) as MediaAsset[] | undefined;
+    return { data, isLoading: data === undefined };
 }
 
-/** Uploads a file (image/video/audio) and returns the stored asset. */
+function kindOf(file: File): string {
+    if (file.type.startsWith("video")) return "video";
+    if (file.type.startsWith("audio")) return "audio";
+    return "image";
+}
+
+/** Uploads a file to Convex storage and records the asset. */
 export function useUploadMedia() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: async (file: File) => {
-            const form = new FormData();
-            form.append("file", file);
-            const { data } = await api.post<MediaAsset>("/media/upload", form, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            return data;
-        },
-        onSuccess: () => qc.invalidateQueries({ queryKey: mediaKey }),
-    });
+    const genUrl = useMutation(api.media.generateUploadUrl);
+    const addAsset = useMutation(api.media.addAsset);
+    const [isPending, setPending] = useState(false);
+
+    const mutateAsync = async (file: File): Promise<MediaAsset> => {
+        setPending(true);
+        try {
+            const url = await genUrl({});
+            const res = await fetch(url, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+            if (!res.ok) throw new Error("Upload failed");
+            const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
+            return (await addAsset({ storageId, type: kindOf(file), name: file.name, size: file.size })) as MediaAsset;
+        } finally {
+            setPending(false);
+        }
+    };
+    return { mutateAsync, isPending };
 }
 
 export function useDeleteMedia() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: async (id: string) => api.delete(`/media/${id}`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: mediaKey }),
-    });
+    const run = useMutation(api.media.remove);
+    return { mutate: (id: string) => { void run({ id: id as Id<"mediaAssets"> }); } };
 }
 
 export function useSetPoster() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: async ({ id, posterUrl }: { id: string; posterUrl: string }) =>
-            (await api.patch<MediaAsset>(`/media/${id}`, { posterUrl })).data,
-        onSuccess: () => qc.invalidateQueries({ queryKey: mediaKey }),
-    });
+    const run = useMutation(api.media.patchPoster);
+    return {
+        mutate: (input: { id: string; posterUrl: string }) => { void run({ id: input.id as Id<"mediaAssets">, posterUrl: input.posterUrl }); },
+    };
 }

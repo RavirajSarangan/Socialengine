@@ -1,44 +1,11 @@
-import { useEffect, useState } from "react";
 import { ShieldCheckIcon, AlertCircleIcon, ServerIcon, CpuIcon, CheckCircleIcon } from "lucide-react";
+import { useQuery } from "convex/react";
 import PageHeader from "../../components/dashboard/PageHeader";
-import { api } from "../../lib/api";
-
-interface HealthData {
-    status: string;
-    service: string;
-    database: string;
-    time: string;
-    integrations: {
-        openai: boolean;
-        elevenlabs: boolean;
-        ayrshare: boolean;
-    };
-}
+import { api } from "../../../convex/_generated/api";
 
 export default function AdminHealth() {
-    const [health, setHealth] = useState<HealthData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-
-    const fetchHealth = () => {
-        setLoading(true);
-        api.get<HealthData>("/health")
-            .then((res) => {
-                setHealth(res.data);
-                setError("");
-            })
-            .catch(() => {
-                setError("Unable to retrieve health telemetry from the API server.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    };
-
-    useEffect(() => {
-        fetchHealth();
-    }, []);
-
+    const health = useQuery(api.system.health);
+    const loading = health === undefined;
     const isDbUp = health?.database === "connected";
     const integrations = health?.integrations ?? { openai: false, elevenlabs: false, ayrshare: false };
 
@@ -46,23 +13,8 @@ export default function AdminHealth() {
         <>
             <PageHeader
                 title="System Health & Telemetry"
-                subtitle="Live status monitoring of server, database and service integrations"
-                action={
-                    <button
-                        onClick={fetchHealth}
-                        className="inline-flex items-center gap-2 border border-slate-200 text-slate-600 rounded-full px-4 py-2 hover:bg-slate-50 text-xs"
-                    >
-                        Refresh status
-                    </button>
-                }
+                subtitle="Live status monitoring of the Convex backend, database and service integrations"
             />
-
-            {error && (
-                <div className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl flex items-center gap-3 text-sm">
-                    <AlertCircleIcon className="size-5 shrink-0" />
-                    {error}
-                </div>
-            )}
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Server & DB Card */}

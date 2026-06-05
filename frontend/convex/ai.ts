@@ -14,6 +14,11 @@ const VOICE_IDS: Record<string, string> = {
     antoni: "ErXwobaYiN019PkySvjV",
 };
 
+interface AiResult {
+    generation: { _id: Id<"generations">; user: Id<"users">; prompt: string; content: string; mediaUrl?: string; mediaType?: string; tone?: string; type: string; createdAt: string; updatedAt: string };
+    remainingCredits: number;
+}
+
 async function requireCreditsUserId(ctx: ActionCtx): Promise<Id<"users">> {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
@@ -24,7 +29,7 @@ async function requireCreditsUserId(ctx: ActionCtx): Promise<Id<"users">> {
 
 export const caption = action({
     args: { prompt: v.string(), tone: v.optional(v.string()), platforms: v.optional(v.array(v.string())) },
-    handler: async (ctx, args) => {
+    handler: async (ctx, args): Promise<AiResult> => {
         const userId = await requireCreditsUserId(ctx);
         const key = process.env.OPENAI_API_KEY;
         if (!key) throw new Error("OpenAI is not configured (set OPENAI_API_KEY)");
@@ -45,7 +50,7 @@ export const caption = action({
 
 export const image = action({
     args: { prompt: v.string() },
-    handler: async (ctx, args) => {
+    handler: async (ctx, args): Promise<AiResult> => {
         const userId = await requireCreditsUserId(ctx);
         const key = process.env.OPENAI_API_KEY;
         if (!key) throw new Error("OpenAI is not configured (set OPENAI_API_KEY)");
@@ -66,7 +71,7 @@ export const image = action({
 
 export const voice = action({
     args: { text: v.string(), voiceId: v.optional(v.string()) },
-    handler: async (ctx, args) => {
+    handler: async (ctx, args): Promise<AiResult> => {
         const userId = await requireCreditsUserId(ctx);
         const key = process.env.ELEVENLABS_API_KEY;
         if (!key) throw new Error("ElevenLabs is not configured (set ELEVENLABS_API_KEY)");

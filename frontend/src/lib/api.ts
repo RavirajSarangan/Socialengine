@@ -1,9 +1,10 @@
-import axios from "axios";
+// Convex migration: the REST/axios client was removed. This module keeps only the
+// small helpers a few components still import. Media URLs from Convex storage are
+// absolute, so API_URL is an empty prefix.
 
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+export const API_URL = "";
 
 const TOKEN_KEY = "se_token";
-
 export function getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
 }
@@ -14,40 +15,13 @@ export function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
 }
 
-export const api = axios.create({
-    baseURL: `${API_URL}/api`,
-});
-
-// Attach the JWT and localtunnel bypass header to every request.
-api.interceptors.request.use((config) => {
-    const token = getToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    config.headers["Bypass-Tunnel-Reminder"] = "true";
-    return config;
-});
-
-// On auth failure, drop the token and bounce to login.
-api.interceptors.response.use(
-    (res) => res,
-    (error) => {
-        const status = error?.response?.status;
-        const url = error?.config?.url ?? "";
-        const isPublicAuthRequest = url.startsWith("/auth/login") || url.startsWith("/auth/register");
-        if ((status === 401 || status === 403) && !isPublicAuthRequest) {
-            clearToken();
-            if (!window.location.pathname.startsWith("/login")) {
-                window.location.assign("/login");
-            }
-        }
-        return Promise.reject(error);
-    }
-);
-
+/** Normalises a Convex/JS error into a readable message. */
 export function apiErrorMessage(error: unknown, fallback = "Something went wrong"): string {
-    if (axios.isAxiosError(error)) {
-        return error.response?.data?.message ?? error.message ?? fallback;
+    if (error instanceof Error && error.message) {
+        const m = error.message;
+        const idx = m.lastIndexOf("Uncaught Error:");
+        const cleaned = idx >= 0 ? m.slice(idx + "Uncaught Error:".length) : m;
+        return cleaned.split("\n")[0].trim() || fallback;
     }
     return fallback;
 }

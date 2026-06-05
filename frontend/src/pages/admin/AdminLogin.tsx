@@ -10,45 +10,16 @@ export default function AdminLogin() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
-    const { login, logout } = useAuth();
+    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
         try {
-            // Standard login call
             await login(email, password);
-            
-            // Immediately check role (since context user state updates upon successful login)
-            // But wait, the state inside login(...) updates the context. To check it synchronously,
-            // we can retrieve from the local storage or wait for the me endpoint/user context.
-            // Let's call loadMe or verify. Actually, useAuth login(...) updates user state.
-            // Let's check the user state right after or verify using window location / reload.
-            // Wait, we can fetch /auth/me or check the user returned.
-            // Let's do a reload or check if we can verify the response in auth context.
-            // Since useAuth login doesn't return the user, we can checkgetToken or fetch /auth/me ourselves to verify role!
-            // That is extremely safe and doesn't rely on React state batching.
-            const response = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/auth/me`, {
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                }
-            });
-            if (response.ok) {
-                const userData = await response.json();
-                if (userData.role === "admin") {
-                    navigate("/admin");
-                } else {
-                    // Log out
-                    logout();
-                    setError("Access Denied: You do not have administrator privileges.");
-                    setLoading(false);
-                }
-            } else {
-                logout();
-                setError("Authentication failed.");
-                setLoading(false);
-            }
+            // The admin route guard verifies the Convex `role` and redirects non-admins back here.
+            navigate("/admin");
         } catch (err) {
             setError(apiErrorMessage(err, "Could not sign in"));
             setLoading(false);

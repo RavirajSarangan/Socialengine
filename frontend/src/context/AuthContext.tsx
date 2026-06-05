@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import { api, setToken, clearToken, getToken } from "../lib/api";
+import { useConvexAuth, useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from "../../convex/_generated/api";
 import type { AuthUser } from "../lib/types";
 
 interface AuthContextValue {
@@ -15,53 +17,27 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<AuthUser | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { isLoading, isAuthenticated } = useConvexAuth();
+    const me = useQuery(api.users.me);
+    const { signIn, signOut } = useAuthActions();
 
-    async function loadMe() {
-        if (!getToken()) {
-            setUser(null);
-            setLoading(false);
-            return;
-        }
-        try {
-            const { data } = await api.get<AuthUser>("/auth/me");
-            setUser(data);
-        } catch {
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        // Bootstrap the session from a stored token on mount (async; runs after paint).
-        const t = setTimeout(loadMe, 0);
-        return () => clearTimeout(t);
-    }, []);
+    const user = (me as AuthUser | null | undefined) ?? null;
+    const loading = isLoading || (isAuthenticated && me === undefined);
 
     async function login(email: string, password: string) {
-        const { data } = await api.post<{ token: string; user: AuthUser }>("/auth/login", { email, password });
-        setToken(data.token);
-        setUser(data.user);
+        await signIn("password", { email, password, flow: "signIn" });
     }
-
     async function register(name: string, email: string, password: string, plan?: string) {
-        const { data } = await api.post<{ token: string; user: AuthUser }>("/auth/register", { name, email, password, plan });
-        setToken(data.token);
-        setUser(data.user);
+        await signIn("password", { name, email, password, flow: "signUp", ...(plan ? { plan } : {}) });
     }
-
     function logout() {
-        clearToken();
-        setUser(null);
+        void signOut();
+    }
+    async function refresh() {
+        // Convex queries are reactive — nothing to refresh.
     }
 
-    return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, refresh: loadMe }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={{ user, loading, login, register, logout, refresh }}>{children}</AuthContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
