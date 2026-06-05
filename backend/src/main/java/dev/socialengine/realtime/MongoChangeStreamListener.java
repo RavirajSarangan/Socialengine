@@ -1,6 +1,5 @@
 package dev.socialengine.realtime;
 
-import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,13 +25,13 @@ public class MongoChangeStreamListener implements DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(MongoChangeStreamListener.class);
 
-    private final MongoClient mongoClient;
+    private final MongoTemplate mongoTemplate;
     private final RealtimePublisher realtime;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "mongo-change-stream"));
     private MongoCursor<ChangeStreamDocument<Document>> postsCursor;
 
-    public MongoChangeStreamListener(MongoClient mongoClient, RealtimePublisher realtime) {
-        this.mongoClient = mongoClient;
+    public MongoChangeStreamListener(MongoTemplate mongoTemplate, RealtimePublisher realtime) {
+        this.mongoTemplate = mongoTemplate;
         this.realtime = realtime;
     }
 
@@ -39,18 +39,12 @@ public class MongoChangeStreamListener implements DisposableBean {
     public void start() {
         executor.submit(() -> {
             try {
-                String dbName = mongoClient.getDatabase("admin").getName();
-                // prefer the database from the client's settings; fall back to 'socialengine'
-                // (Spring Boot usually configures the client for the correct DB)
-                try {
-                    dbName = mongoClient.listDatabaseNames().first();
-                } catch (Exception e) {
-                    // ignore
-                }
+                var database = mongoTemplate.getDb();
+                String dbName = database.getName();
                 log.info("Starting MongoDB change stream listener (collection: posts) against DB={}", dbName);
-                MongoCollection<Document> posts = mongoClient.getDatabase(dbName).getCollection("post");
-                // In this app the collection might be named 'post' or 'posts' depending on mapping; try both
-                if (posts == null) posts = mongoClient.getDatabase(dbName).getCollection("posts");
+                
+                // Entity mapping uses @Document("posts")
+                MongoCollection<Document> posts = database.getCollection("posts");
 
                 var iterable = posts.watch().fullDocument(FullDocument.UPDATE_LOOKUP);
                 postsCursor = iterable.iterator();

@@ -6,6 +6,7 @@ import dev.socialengine.security.CurrentUserId;
 import dev.socialengine.web.dto.Dtos.AdminStatsDto;
 import dev.socialengine.web.dto.Dtos.AdminUpdateUserRequest;
 import dev.socialengine.web.dto.Dtos.AdminUserDto;
+import dev.socialengine.web.dto.Dtos.ActivityDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -92,6 +93,12 @@ public class AdminController {
         media.deleteByUserId(id);
         rules.deleteByUserId(id);
         users.delete(target);
+    }
+
+    @GetMapping("/activities")
+    public List<ActivityDto> listActivities(@CurrentUserId String userId) {
+        requireAdmin(userId);
+        return activities.findAllByOrderByCreatedAtDesc().stream().map(Mappers::activity).toList();
     }
 
     private void requireAdmin(String userId) {

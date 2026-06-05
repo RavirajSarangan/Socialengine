@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MailIcon, LockIcon, ArrowRightIcon, User2Icon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../lib/api";
 
 export default function Login() {
-    const [loginState, setLoginState] = useState(true);
+    const [searchParams] = useSearchParams();
+    const initialRegister = searchParams.get("register") === "true";
+    const selectedPlan = searchParams.get("plan") || "Pro";
+
+    const [loginState, setLoginState] = useState(!initialRegister);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -38,7 +42,7 @@ export default function Login() {
             if (loginState) {
                 await login(email, password);
             } else {
-                await register(name, email, password);
+                await register(name, email, password, selectedPlan);
             }
             navigate("/dashboard");
         } catch (err) {
@@ -56,7 +60,9 @@ export default function Login() {
                             <img src="/logo.svg" alt="Logo" className="size-6.5" />
                             <h1 className="text-2xl">Scheduler</h1>
                         </Link>
-                        <p className="text-slate-500 text-sm mt-1">Sign in to your Dashboard</p>
+                        <p className="text-slate-500 text-sm mt-1">
+                            {loginState ? "Sign in to your Dashboard" : `Registering for ${selectedPlan} Plan`}
+                        </p>
                     </div>
                     <form onSubmit={handleSubmit} className="space-y-5 text-sm">
                         {!loginState && (

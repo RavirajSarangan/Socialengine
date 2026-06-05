@@ -34,6 +34,29 @@ public class AuthController {
         u.setName(req.name());
         u.setEmail(req.email());
         u.setPasswordHash(encoder.encode(req.password()));
+        
+        String plan = req.plan();
+        if (plan != null && !plan.isBlank()) {
+            // Capitalize first letter (Starter, Pro, Agency)
+            plan = plan.substring(0, 1).toUpperCase() + plan.substring(1).toLowerCase();
+            u.setPlan(plan);
+            if ("Starter".equals(plan)) {
+                u.setAiCredits(10);
+                u.setAiCreditsTotal(10);
+            } else if ("Agency".equals(plan)) {
+                u.setAiCredits(1000);
+                u.setAiCreditsTotal(1000);
+            } else {
+                u.setPlan("Pro");
+                u.setAiCredits(200);
+                u.setAiCreditsTotal(200);
+            }
+        } else {
+            u.setPlan("Pro");
+            u.setAiCredits(200);
+            u.setAiCreditsTotal(200);
+        }
+        
         u = users.save(u);
         return new AuthResponse(jwt.generateToken(u.getId(), u.getEmail()), Mappers.user(u));
     }

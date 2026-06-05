@@ -29,9 +29,23 @@ export interface AdminUserUpdate {
     aiCreditsTotal?: number;
 }
 
+export interface AdminActivity {
+    _id: string;
+    user: string;
+    actionType: string;
+    description: string;
+    relatedPost?: {
+        _id: string;
+        content: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+}
+
 const adminKeys = {
     stats: ["admin", "stats"] as const,
     users: ["admin", "users"] as const,
+    activities: ["admin", "activities"] as const,
 };
 
 export function useAdminStats() {
@@ -40,6 +54,10 @@ export function useAdminStats() {
 
 export function useAdminUsers() {
     return useQuery({ queryKey: adminKeys.users, queryFn: async () => (await api.get<AdminUser[]>("/admin/users")).data });
+}
+
+export function useAdminActivities() {
+    return useQuery({ queryKey: adminKeys.activities, queryFn: async () => (await api.get<AdminActivity[]>("/admin/activities")).data });
 }
 
 export function useUpdateUser() {

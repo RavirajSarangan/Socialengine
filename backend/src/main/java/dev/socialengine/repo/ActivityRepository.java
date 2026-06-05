@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface ActivityRepository extends MongoRepository<Activity, String> {
     List<Activity> findByUserIdOrderByCreatedAtDesc(String userId);
+    List<Activity> findAllByOrderByCreatedAtDesc();
     void deleteByUserId(String userId);
 }

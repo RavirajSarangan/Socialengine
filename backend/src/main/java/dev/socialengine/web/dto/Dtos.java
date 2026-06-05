@@ -11,7 +11,7 @@ public final class Dtos {
     private Dtos() {}
 
     // ---- Auth ----
-    public record RegisterRequest(@NotBlank String name, @Email String email, @NotBlank String password) {}
+    public record RegisterRequest(@NotBlank String name, @Email String email, @NotBlank String password, String plan) {}
     public record LoginRequest(@Email String email, @NotBlank String password) {}
     public record AuthResponse(String token, UserDto user) {}
     public record UserDto(@JsonProperty("_id") String id, String name, String email,

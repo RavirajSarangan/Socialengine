@@ -15,7 +15,7 @@ export default function AdminDashboard() {
                 title="Admin"
                 subtitle="System overview and management"
                 action={
-                    <Link to="/dashboard/admin/users" className="inline-flex items-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full px-5 py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all">
+                    <Link to="/admin/users" className="inline-flex items-center gap-2 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full px-5 py-2.5 text-sm hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] transition-all">
                         <UsersIcon className="size-4" /> Manage users
                     </Link>
                 }
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
                         </div>
                     ))}
                 </div>
-                <Link to="/dashboard/admin/users" className="mt-5 inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+                <Link to="/admin/users" className="mt-5 inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
                     Manage all users <ArrowRightIcon className="size-3" />
                 </Link>
             </div>

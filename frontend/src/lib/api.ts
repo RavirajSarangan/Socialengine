@@ -18,12 +18,13 @@ export const api = axios.create({
     baseURL: `${API_URL}/api`,
 });
 
-// Attach the JWT to every request.
+// Attach the JWT and localtunnel bypass header to every request.
 api.interceptors.request.use((config) => {
     const token = getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    config.headers["Bypass-Tunnel-Reminder"] = "true";
     return config;
 });
 

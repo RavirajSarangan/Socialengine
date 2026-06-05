@@ -33,6 +33,10 @@ public class ElevenLabsService {
                 .build();
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
     public byte[] generateVoice(String text, String voiceId) {
         if (!enabled) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "ElevenLabs is not configured (set ELEVENLABS_API_KEY)");

@@ -31,3 +31,4 @@ backend/.classpath
 backend/.project
 backend/.settings/
 backend/bin/
+.vercel

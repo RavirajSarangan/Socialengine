@@ -19,7 +19,7 @@ function PostRow({ post }: { post: Post }) {
     const duplicate = useDuplicatePost();
     const publish = usePublishPost();
     const del = useDeletePost();
-    const canPublish = post.status === "scheduled" || post.status === "draft";
+    const canPublish = post.status === "scheduled" || post.status === "draft" || post.status === "failed";
 
     return (
         <div className="relative group">

@@ -28,6 +28,10 @@ public class OpenAiService {
                 .build();
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
     public String generateCaption(String prompt, String tone, List<String> platforms) {
         requireEnabled();
         String audience = (platforms == null || platforms.isEmpty()) ? "" : " for " + String.join(", ", platforms);

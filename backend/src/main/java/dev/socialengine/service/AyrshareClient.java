@@ -85,6 +85,30 @@ public class AyrshareClient {
         }
     }
 
+    /** Returns connected platform ids mapped to their usernames/handles from Ayrshare. */
+    public Map<String, String> connectedHandles() {
+        if (!enabled) return Map.of();
+        try {
+            JsonNode resp = client.get().uri("/user").retrieve().body(JsonNode.class);
+            Map<String, String> out = new java.util.HashMap<>();
+            if (resp != null && resp.has("displayNames")) {
+                resp.get("displayNames").forEach(n -> {
+                    String platform = n.path("platform").asText("").toLowerCase();
+                    String username = n.path("username").asText("");
+                    if (username.isBlank()) {
+                        username = n.path("displayName").asText("");
+                    }
+                    if (!platform.isBlank() && !username.isBlank()) {
+                        out.put(platform, username.replaceFirst("^@", ""));
+                    }
+                });
+            }
+            return out;
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
     private String truncate(String s) {
         if (s == null) return "request failed";
         return s.length() > 180 ? s.substring(0, 180) : s;

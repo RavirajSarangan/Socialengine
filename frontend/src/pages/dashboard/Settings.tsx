@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { UserIcon, SparklesIcon, CreditCardIcon, KeyIcon, ArrowRightIcon } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../lib/api";
 
 export default function Settings() {
     const { user } = useAuth();
@@ -13,6 +15,22 @@ export default function Settings() {
         aiCreditsTotal: user?.aiCreditsTotal ?? 200,
     };
     const pct = Math.round((currentUser.aiCredits / currentUser.aiCreditsTotal) * 100);
+
+    const [integrations, setIntegrations] = useState<Record<string, boolean>>({
+        openai: false,
+        elevenlabs: false,
+        ayrshare: false,
+    });
+
+    useEffect(() => {
+        api.get("/health")
+            .then((res) => {
+                if (res.data?.integrations) {
+                    setIntegrations(res.data.integrations);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     return (
         <>
@@ -69,15 +87,19 @@ export default function Settings() {
                     <p className="text-xs text-slate-400 mb-4">Connect the services that power AI generation and publishing. Keys are stored server-side (configured in Phase 4–5).</p>
                     <div className="grid sm:grid-cols-3 gap-3">
                         {[
-                            { name: "OpenAI", env: "OPENAI_API_KEY", desc: "Captions & images" },
-                            { name: "ElevenLabs", env: "ELEVENLABS_API_KEY", desc: "Voiceovers" },
-                            { name: "Ayrshare", env: "AYRSHARE_API_KEY", desc: "Social publishing" },
+                            { name: "OpenAI", key: "openai", env: "OPENAI_API_KEY", desc: "Captions & images" },
+                            { name: "ElevenLabs", key: "elevenlabs", env: "ELEVENLABS_API_KEY", desc: "Voiceovers" },
+                            { name: "Ayrshare", key: "ayrshare", env: "AYRSHARE_API_KEY", desc: "Social publishing" },
                         ].map((s) => (
                             <div key={s.name} className="border border-slate-200 rounded-xl p-4">
                                 <div className="text-sm text-slate-700">{s.name}</div>
                                 <div className="text-xs text-slate-400 mb-2">{s.desc}</div>
                                 <code className="text-[11px] text-slate-400 bg-slate-50 rounded px-2 py-1 block truncate">{s.env}</code>
-                                <span className="inline-block mt-2 text-[11px] text-amber-600 bg-amber-50 rounded-full px-2 py-0.5">Not connected</span>
+                                {integrations[s.key] ? (
+                                    <span className="inline-block mt-2 text-[11px] text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-0.5 font-medium">Connected</span>
+                                ) : (
+                                    <span className="inline-block mt-2 text-[11px] text-amber-600 bg-amber-50 rounded-full px-2.5 py-0.5 font-medium">Not connected</span>
+                                )}
                             </div>
                         ))}
                     </div>

@@ -1,7 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
-import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon, ImagesIcon, ShieldIcon } from "lucide-react";
+import { LayoutDashboardIcon, PenSquareIcon, CalendarDaysIcon, FileTextIcon, Share2Icon, SparklesIcon, BarChart3Icon, ActivityIcon, MessageSquareReplyIcon, SettingsIcon, XIcon, ImagesIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 
 interface NavItem {
     to: string;
@@ -30,10 +29,7 @@ interface Props {
 }
 
 export default function Sidebar({ open, onClose }: Props) {
-    const { user } = useAuth();
-    const nav = user?.role === "admin"
-        ? [...NAV, { to: "/dashboard/admin", label: "Admin", icon: ShieldIcon } as NavItem]
-        : NAV;
+    const nav = NAV;
     return (
         <>
             {open && <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={onClose} />}

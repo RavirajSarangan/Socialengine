@@ -60,15 +60,47 @@ public class AccountController {
     /** Re-checks each connected account against the publishing provider (Ayrshare) and refreshes its status. */
     @PostMapping("/verify")
     public List<AccountDto> verify(@CurrentUserId String userId) {
-        var connected = ayrshare.connectedPlatforms();
-        for (SocialAccount a : accounts.findByUserId(userId)) {
-            String status = !ayrshare.isEnabled()
-                    ? a.getStatus()
-                    : (connected.contains(a.getPlatform().toLowerCase()) ? "connected" : "pending");
-            a.setStatus(status);
-            a.setUpdatedAt(java.time.Instant.now());
-            accounts.save(a);
+        if (!ayrshare.isEnabled()) {
+            return accounts.findByUserId(userId).stream().map(Mappers::account).toList();
         }
+
+        var connected = ayrshare.connectedHandles();
+        var existing = accounts.findByUserId(userId);
+
+        // Update status for existing records, or import new ones
+        for (java.util.Map.Entry<String, String> entry : connected.entrySet()) {
+            String platform = entry.getKey();
+            String handle = entry.getValue();
+
+            // Find if user already connected this platform
+            var match = existing.stream().filter(a -> a.getPlatform().equalsIgnoreCase(platform)).findFirst();
+            if (match.isPresent()) {
+                SocialAccount a = match.get();
+                a.setStatus("connected");
+                a.setHandle(handle);
+                a.setUpdatedAt(java.time.Instant.now());
+                accounts.save(a);
+            } else {
+                // Auto-import it since it's connected in Ayrshare!
+                SocialAccount a = new SocialAccount();
+                a.setUserId(userId);
+                a.setPlatform(platform);
+                a.setHandle(handle);
+                a.setStatus("connected");
+                a.setProviderAccountId("ayrshare-" + System.currentTimeMillis());
+                accounts.save(a);
+            }
+        }
+
+        // Mark any local accounts as pending if they are no longer connected in Ayrshare
+        for (SocialAccount a : accounts.findByUserId(userId)) {
+            if (!connected.containsKey(a.getPlatform().toLowerCase())) {
+                a.setStatus("pending");
+                a.setUpdatedAt(java.time.Instant.now());
+                accounts.save(a);
+            }
+        }
+
         realtime.accountsChanged(userId);
         return accounts.findByUserId(userId).stream().map(Mappers::account).toList();
     }
