@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { getToken } from "../lib/api";
 import type { Activity, AutoReplyRule, Generation, Post, SocialAccount } from "../lib/types";
 
 export interface AnalyticsSummary {
@@ -37,20 +38,25 @@ export interface AiResult {
 
 type Opts<R> = { onSuccess?: (r: R) => void; onError?: (e: unknown) => void };
 
-/** react-query-style { data, isLoading } from a Convex reactive query (undefined while loading). */
+/** Query args carrying the session token, or "skip" when logged out. */
+function authArgs(): { token: string } | "skip" {
+    const t = getToken();
+    return t ? { token: t } : "skip";
+}
+
 function qr<T>(data: T | undefined) {
     return { data, isLoading: data === undefined };
 }
 
-/** react-query-style mutation surface over a Convex mutation/action runner. */
-function useAdapter<PageArg, R>(runner: (arg: unknown) => Promise<R>, map: (a: PageArg) => unknown) {
+/** react-query-style mutation surface; injects the session token into every call. */
+function useAdapter<PageArg, R>(runner: (arg: unknown) => Promise<R>, map: (a: PageArg) => Record<string, unknown>) {
     const [isPending, setPending] = useState(false);
     const [variables, setVariables] = useState<PageArg | undefined>(undefined);
     const mutateAsync = async (arg: PageArg): Promise<R> => {
         setPending(true);
         setVariables(arg);
         try {
-            return await runner(map(arg));
+            return await runner({ token: getToken() ?? undefined, ...map(arg) });
         } finally {
             setPending(false);
         }
@@ -62,17 +68,17 @@ function useAdapter<PageArg, R>(runner: (arg: unknown) => Promise<R>, map: (a: P
 }
 
 // ---- Queries ----
-export function usePosts() { return qr(useQuery(api.posts.list) as Post[] | undefined); }
-export function useAccounts() { return qr(useQuery(api.accounts.list) as SocialAccount[] | undefined); }
-export function useActivity() { return qr(useQuery(api.activities.list) as Activity[] | undefined); }
-export function useGenerations() { return qr(useQuery(api.generations.list) as Generation[] | undefined); }
-export function useAnalytics() { return qr(useQuery(api.analytics.summary) as AnalyticsSummary | undefined); }
-export function useAutoReply() { return qr(useQuery(api.autoReply.list) as AutoReplyRule[] | undefined); }
+export function usePosts() { return qr(useQuery(api.posts.list, authArgs()) as Post[] | undefined); }
+export function useAccounts() { return qr(useQuery(api.accounts.list, authArgs()) as SocialAccount[] | undefined); }
+export function useActivity() { return qr(useQuery(api.activities.list, authArgs()) as Activity[] | undefined); }
+export function useGenerations() { return qr(useQuery(api.generations.list, authArgs()) as Generation[] | undefined); }
+export function useAnalytics() { return qr(useQuery(api.analytics.summary, authArgs()) as AnalyticsSummary | undefined); }
+export function useAutoReply() { return qr(useQuery(api.autoReply.list, authArgs()) as AutoReplyRule[] | undefined); }
 
 // ---- Posts ----
 export function useCreatePost() {
     const run = useMutation(api.posts.create);
-    return useAdapter<CreatePostInput, Post>((a) => run(a as never) as Promise<Post>, (a) => a);
+    return useAdapter<CreatePostInput, Post>((a) => run(a as never) as Promise<Post>, (a) => ({ ...a }));
 }
 export function useDuplicatePost() {
     const run = useMutation(api.posts.duplicate);
@@ -90,7 +96,7 @@ export function usePublishPost() {
 // ---- Accounts ----
 export function useConnectAccount() {
     const run = useMutation(api.accounts.connect);
-    return useAdapter<{ platform: string; handle: string }, SocialAccount>((a) => run(a as never) as Promise<SocialAccount>, (a) => a);
+    return useAdapter<{ platform: string; handle: string }, SocialAccount>((a) => run(a as never) as Promise<SocialAccount>, (a) => ({ ...a }));
 }
 export function useDisconnectAccount() {
     const run = useMutation(api.accounts.disconnect);
@@ -108,19 +114,19 @@ export function useToggleRule() {
 }
 export function useCreateRule() {
     const run = useMutation(api.autoReply.create);
-    return useAdapter<{ platform: string; trigger: string; tone: string; instructions: string; enabled?: boolean }, AutoReplyRule>((a) => run(a as never) as Promise<AutoReplyRule>, (a) => a);
+    return useAdapter<{ platform: string; trigger: string; tone: string; instructions: string; enabled?: boolean }, AutoReplyRule>((a) => run(a as never) as Promise<AutoReplyRule>, (a) => ({ ...a }));
 }
 
 // ---- AI ----
 export function useGenerateCaption() {
     const run = useAction(api.ai.caption);
-    return useAdapter<{ prompt: string; tone?: string; platforms?: string[] }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => a);
+    return useAdapter<{ prompt: string; tone?: string; platforms?: string[] }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => ({ ...a }));
 }
 export function useGenerateImage() {
     const run = useAction(api.ai.image);
-    return useAdapter<{ prompt: string }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => a);
+    return useAdapter<{ prompt: string }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => ({ ...a }));
 }
 export function useGenerateVoice() {
     const run = useAction(api.ai.voice);
-    return useAdapter<{ text: string; voiceId: string }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => a);
+    return useAdapter<{ text: string; voiceId: string }, AiResult>((a) => run(a as never) as Promise<AiResult>, (a) => ({ ...a }));
 }

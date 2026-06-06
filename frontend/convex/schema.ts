@@ -11,26 +11,42 @@ const mediaItem = v.object({
 });
 
 export default defineSchema({
+    // Keep the legacy Convex Auth tables so any pre-existing rows still validate.
     ...authTables,
 
-    // Auth's users table is extended with our profile fields.
+    // Override users with our shape. All fields optional so legacy auth rows validate too.
     users: defineTable({
         name: v.optional(v.string()),
         email: v.optional(v.string()),
-        emailVerificationTime: v.optional(v.number()),
-        image: v.optional(v.string()),
-        isAnonymous: v.optional(v.boolean()),
+        passwordHash: v.optional(v.string()),
         plan: v.optional(v.string()),
         aiCredits: v.optional(v.number()),
         aiCreditsTotal: v.optional(v.number()),
         role: v.optional(v.string()), // user | admin
-    }).index("email", ["email"]),
+        // legacy @convex-dev/auth fields (tolerated on old docs)
+        emailVerificationTime: v.optional(v.number()),
+        phone: v.optional(v.string()),
+        phoneVerificationTime: v.optional(v.number()),
+        image: v.optional(v.string()),
+        isAnonymous: v.optional(v.boolean()),
+    }).index("by_email", ["email"]),
+
+    sessions: defineTable({
+        token: v.string(),
+        userId: v.id("users"),
+        expiresAt: v.number(),
+    }).index("by_token", ["token"]),
+
+    appConfig: defineTable({
+        name: v.string(),
+        value: v.string(),
+    }).index("by_name", ["name"]),
 
     socialAccounts: defineTable({
         userId: v.id("users"),
         platform: v.string(),
         handle: v.string(),
-        status: v.string(), // connected | pending | error
+        status: v.string(),
         providerAccountId: v.optional(v.string()),
     }).index("by_user", ["userId"]),
 
@@ -41,8 +57,8 @@ export default defineSchema({
         media: v.optional(v.array(mediaItem)),
         mediaUrl: v.optional(v.string()),
         mediaType: v.optional(v.string()),
-        scheduledFor: v.number(), // epoch ms
-        status: v.string(), // draft | scheduled | published | failed
+        scheduledFor: v.number(),
+        status: v.string(),
         publishedAt: v.optional(v.number()),
     })
         .index("by_user", ["userId"])
@@ -56,7 +72,7 @@ export default defineSchema({
         mediaUrl: v.optional(v.string()),
         mediaType: v.optional(v.string()),
         tone: v.optional(v.string()),
-        type: v.string(), // text | image | voice
+        type: v.string(),
     }).index("by_user", ["userId"]),
 
     activities: defineTable({
@@ -84,6 +100,6 @@ export default defineSchema({
         posterUrl: v.optional(v.string()),
         name: v.optional(v.string()),
         size: v.optional(v.number()),
-        source: v.string(), // upload | ai
+        source: v.string(),
     }).index("by_user", ["userId"]),
 });

@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { requireAdmin, iso } from "./lib/guards";
 
 export const stats = query({
-    args: {},
-    handler: async (ctx) => {
-        await requireAdmin(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        await requireAdmin(ctx, token);
         const [users, posts, accounts, generations, media] = await Promise.all([
             ctx.db.query("users").collect(),
             ctx.db.query("posts").collect(),
@@ -29,9 +29,9 @@ export const stats = query({
 });
 
 export const users = query({
-    args: {},
-    handler: async (ctx) => {
-        await requireAdmin(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        await requireAdmin(ctx, token);
         const rows = await ctx.db.query("users").order("desc").take(200);
         return rows.map((u) => ({
             _id: u._id,
@@ -47,9 +47,9 @@ export const users = query({
 });
 
 export const activities = query({
-    args: {},
-    handler: async (ctx) => {
-        await requireAdmin(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        await requireAdmin(ctx, token);
         const rows = await ctx.db.query("activities").order("desc").take(100);
         return rows.map((a) => ({
             _id: a._id,
@@ -64,9 +64,9 @@ export const activities = query({
 });
 
 export const patchUser = mutation({
-    args: { id: v.id("users"), plan: v.optional(v.string()), aiCredits: v.optional(v.number()), aiCreditsTotal: v.optional(v.number()), role: v.optional(v.string()) },
+    args: { token: v.optional(v.string()), id: v.id("users"), plan: v.optional(v.string()), aiCredits: v.optional(v.number()), aiCreditsTotal: v.optional(v.number()), role: v.optional(v.string()) },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        await requireAdmin(ctx, args.token);
         const patch: { plan?: string; aiCredits?: number; aiCreditsTotal?: number; role?: string } = {};
         if (args.plan !== undefined) patch.plan = args.plan;
         if (args.aiCredits !== undefined) patch.aiCredits = args.aiCredits;
@@ -78,9 +78,9 @@ export const patchUser = mutation({
 });
 
 export const removeUser = mutation({
-    args: { id: v.id("users") },
-    handler: async (ctx, { id }) => {
-        const adminId = await requireAdmin(ctx);
+    args: { token: v.optional(v.string()), id: v.id("users") },
+    handler: async (ctx, { token, id }) => {
+        const adminId = await requireAdmin(ctx, token);
         if (id === adminId) throw new Error("You cannot delete your own admin account");
         await ctx.db.delete(id);
         return { ok: true };

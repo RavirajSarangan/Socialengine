@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireUserId } from "./lib/guards";
+import { requireUser } from "./lib/guards";
 
 export const PLANS: Record<string, { id: string; name: string; price: number; aiCredits: number; description: string }> = {
     starter: { id: "starter", name: "Starter", price: 0, aiCredits: 5, description: "For creators getting started." },
@@ -14,9 +14,9 @@ export const plans = query({
 });
 
 export const setPlan = mutation({
-    args: { plan: v.string() },
-    handler: async (ctx, { plan }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), plan: v.string() },
+    handler: async (ctx, { token, plan }) => {
+        const userId = await requireUser(ctx, token);
         const def = PLANS[plan.toLowerCase()];
         if (!def) throw new Error("Unknown plan");
         await ctx.db.patch(userId, { plan: def.name, aiCredits: def.aiCredits, aiCreditsTotal: def.aiCredits });
@@ -26,9 +26,9 @@ export const setPlan = mutation({
 });
 
 export const updateProfile = mutation({
-    args: { name: v.optional(v.string()), email: v.optional(v.string()) },
+    args: { token: v.optional(v.string()), name: v.optional(v.string()), email: v.optional(v.string()) },
     handler: async (ctx, args) => {
-        const userId = await requireUserId(ctx);
+        const userId = await requireUser(ctx, args.token);
         const patch: { name?: string; email?: string } = {};
         if (args.name !== undefined) {
             if (!args.name.trim()) throw new Error("Name cannot be empty");

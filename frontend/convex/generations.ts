@@ -1,10 +1,11 @@
 import { query } from "./_generated/server";
-import { requireUserId, iso } from "./lib/guards";
+import { v } from "convex/values";
+import { requireUser, iso } from "./lib/guards";
 
 export const list = query({
-    args: {},
-    handler: async (ctx) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        const userId = await requireUser(ctx, token);
         const rows = await ctx.db.query("generations").withIndex("by_user", (q) => q.eq("userId", userId)).order("desc").take(50);
         return Promise.all(rows.map(async (g) => ({
             _id: g._id,

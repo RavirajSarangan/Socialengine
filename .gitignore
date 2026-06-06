@@ -32,3 +32,6 @@ backend/.project
 backend/.settings/
 backend/bin/
 .vercel
+
+# Convex auth key setup (local secrets)
+**/convex-env-setup.local.txt

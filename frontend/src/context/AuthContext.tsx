@@ -1,8 +1,8 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
-import { useConvexAuth, useQuery } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { getToken, setToken, clearToken } from "../lib/api";
 import type { AuthUser } from "../lib/types";
 
 interface AuthContextValue {
@@ -17,21 +17,29 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { isLoading, isAuthenticated } = useConvexAuth();
-    const me = useQuery(api.users.me);
-    const { signIn, signOut } = useAuthActions();
+    const [token, setTok] = useState<string | null>(getToken());
+    const me = useQuery(api.customAuth.me, { token: token ?? undefined });
+    const signUp = useMutation(api.customAuth.signUp);
+    const signIn = useMutation(api.customAuth.signIn);
+    const signOutMut = useMutation(api.customAuth.signOut);
 
     const user = (me as AuthUser | null | undefined) ?? null;
-    const loading = isLoading || (isAuthenticated && me === undefined);
+    const loading = token != null && me === undefined;
 
     async function login(email: string, password: string) {
-        await signIn("password", { email, password, flow: "signIn" });
+        const r = await signIn({ email, password });
+        setToken(r.token);
+        setTok(r.token);
     }
     async function register(name: string, email: string, password: string, plan?: string) {
-        await signIn("password", { name, email, password, flow: "signUp", ...(plan ? { plan } : {}) });
+        const r = await signUp({ name, email, password, ...(plan ? { plan } : {}) });
+        setToken(r.token);
+        setTok(r.token);
     }
     function logout() {
-        void signOut();
+        if (token) void signOutMut({ token });
+        clearToken();
+        setTok(null);
     }
     async function refresh() {
         // Convex queries are reactive — nothing to refresh.

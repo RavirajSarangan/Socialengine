@@ -2,7 +2,6 @@ import { action, internalAction, internalQuery, internalMutation } from "./_gene
 import type { ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 
 export const _get = internalQuery({
@@ -48,12 +47,12 @@ async function deliver(ctx: ActionCtx, postId: Id<"posts">): Promise<string> {
     const post = await ctx.runQuery(internal.publish._get, { postId });
     if (!post) return "missing";
     const platforms = post.platforms.join(", ");
-    const key = process.env.AYRSHARE_API_KEY;
-    if (key) {
+    const apiKey = await ctx.runQuery(internal.config.get, { name: "AYRSHARE_API_KEY" });
+    if (apiKey) {
         try {
             const res = await fetch("https://api.ayrshare.com/api/post", {
                 method: "POST",
-                headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+                headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ post: post.content || "(no caption)", platforms: post.platforms, ...(post.mediaUrls.length ? { mediaUrls: post.mediaUrls } : {}) }),
             });
             const data = await res.json().catch(() => ({}));
@@ -67,15 +66,14 @@ async function deliver(ctx: ActionCtx, postId: Id<"posts">): Promise<string> {
             return "failed";
         }
     }
-    await ctx.runMutation(internal.publish._mark, { postId, status: "published", description: `Published post to ${platforms}${key ? "" : " (simulated)"}` });
+    await ctx.runMutation(internal.publish._mark, { postId, status: "published", description: `Published post to ${platforms}${apiKey ? "" : " (simulated)"}` });
     return "published";
 }
 
 export const publish = action({
-    args: { postId: v.id("posts") },
-    handler: async (ctx, { postId }): Promise<{ status: string }> => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) throw new Error("Not authenticated");
+    args: { token: v.optional(v.string()), postId: v.id("posts") },
+    handler: async (ctx, { token, postId }): Promise<{ status: string }> => {
+        const userId = await ctx.runQuery(internal.customAuth.userIdFromToken, { token });
         const post = await ctx.runQuery(internal.publish._get, { postId });
         if (!post || post.userId !== userId) throw new Error("Post not found");
         return { status: await deliver(ctx, postId) };

@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { requireUserId, iso } from "./lib/guards";
+import { requireUser, iso } from "./lib/guards";
 import { validateMedia } from "./lib/platformMedia";
 
 const mediaArg = v.array(v.object({
@@ -36,18 +36,18 @@ function parseWhen(s: string | undefined): number {
 }
 
 export const list = query({
-    args: {},
-    handler: async (ctx) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        const userId = await requireUser(ctx, token);
         const rows = await ctx.db.query("posts").withIndex("by_user", (q) => q.eq("userId", userId)).order("desc").collect();
         return rows.map(shape);
     },
 });
 
 export const get = query({
-    args: { id: v.id("posts") },
-    handler: async (ctx, { id }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), id: v.id("posts") },
+    handler: async (ctx, { token, id }) => {
+        const userId = await requireUser(ctx, token);
         const p = await ctx.db.get(id);
         if (!p || p.userId !== userId) throw new Error("Post not found");
         return shape(p);
@@ -56,6 +56,7 @@ export const get = query({
 
 export const create = mutation({
     args: {
+        token: v.optional(v.string()),
         content: v.string(),
         platforms: v.array(v.string()),
         media: v.optional(mediaArg),
@@ -65,7 +66,7 @@ export const create = mutation({
         status: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const userId = await requireUserId(ctx);
+        const userId = await requireUser(ctx, args.token);
         const status = args.status ?? "scheduled";
         const media = args.media ?? [];
         if (status !== "draft") {
@@ -98,6 +99,7 @@ export const create = mutation({
 
 export const update = mutation({
     args: {
+        token: v.optional(v.string()),
         id: v.id("posts"),
         content: v.optional(v.string()),
         platforms: v.optional(v.array(v.string())),
@@ -106,7 +108,7 @@ export const update = mutation({
         status: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const userId = await requireUserId(ctx);
+        const userId = await requireUser(ctx, args.token);
         const p = await ctx.db.get(args.id);
         if (!p || p.userId !== userId) throw new Error("Post not found");
         const patch: Partial<Doc<"posts">> = {};
@@ -125,9 +127,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-    args: { id: v.id("posts") },
-    handler: async (ctx, { id }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), id: v.id("posts") },
+    handler: async (ctx, { token, id }) => {
+        const userId = await requireUser(ctx, token);
         const p = await ctx.db.get(id);
         if (!p || p.userId !== userId) throw new Error("Post not found");
         await ctx.db.delete(id);
@@ -135,9 +137,9 @@ export const remove = mutation({
 });
 
 export const duplicate = mutation({
-    args: { id: v.id("posts") },
-    handler: async (ctx, { id }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), id: v.id("posts") },
+    handler: async (ctx, { token, id }) => {
+        const userId = await requireUser(ctx, token);
         const p = await ctx.db.get(id);
         if (!p || p.userId !== userId) throw new Error("Post not found");
         const copyId = await ctx.db.insert("posts", {

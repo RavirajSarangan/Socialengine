@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { getToken } from "../lib/api";
 
 export interface AdminStats {
     users: number;
@@ -42,18 +43,23 @@ export interface AdminActivity {
     updatedAt: string;
 }
 
+function authArgs(): { token: string } | "skip" {
+    const t = getToken();
+    return t ? { token: t } : "skip";
+}
+
 export function useAdminStats() {
-    const data = useQuery(api.admin.stats) as AdminStats | undefined;
+    const data = useQuery(api.admin.stats, authArgs()) as AdminStats | undefined;
     return { data, isLoading: data === undefined };
 }
 
 export function useAdminUsers() {
-    const data = useQuery(api.admin.users) as AdminUser[] | undefined;
+    const data = useQuery(api.admin.users, authArgs()) as AdminUser[] | undefined;
     return { data, isLoading: data === undefined };
 }
 
 export function useAdminActivities() {
-    const data = useQuery(api.admin.activities) as AdminActivity[] | undefined;
+    const data = useQuery(api.admin.activities, authArgs()) as AdminActivity[] | undefined;
     return { data, isLoading: data === undefined };
 }
 
@@ -64,7 +70,7 @@ export function useUpdateUser() {
     const mutate = (input: { id: string; update: AdminUserUpdate }) => {
         setPending(true);
         setVariables(input);
-        void run({ id: input.id as Id<"users">, ...input.update }).finally(() => setPending(false));
+        void run({ token: getToken() ?? undefined, id: input.id as Id<"users">, ...input.update }).finally(() => setPending(false));
     };
     return { mutate, isPending, variables };
 }
@@ -74,7 +80,7 @@ export function useDeleteUser() {
     const [isPending, setPending] = useState(false);
     const mutate = (id: string) => {
         setPending(true);
-        void run({ id: id as Id<"users"> }).finally(() => setPending(false));
+        void run({ token: getToken() ?? undefined, id: id as Id<"users"> }).finally(() => setPending(false));
     };
     return { mutate, isPending };
 }

@@ -2,7 +2,7 @@ import { query, mutation } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { requireUserId, iso } from "./lib/guards";
+import { requireUser, iso } from "./lib/guards";
 
 async function shape(ctx: QueryCtx | MutationCtx, a: Doc<"mediaAssets">) {
     const url = a.storageId ? await ctx.storage.getUrl(a.storageId) : a.url ?? null;
@@ -20,35 +20,35 @@ async function shape(ctx: QueryCtx | MutationCtx, a: Doc<"mediaAssets">) {
 }
 
 export const list = query({
-    args: {},
-    handler: async (ctx) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        const userId = await requireUser(ctx, token);
         const rows = await ctx.db.query("mediaAssets").withIndex("by_user", (q) => q.eq("userId", userId)).order("desc").collect();
         return Promise.all(rows.map((a) => shape(ctx, a)));
     },
 });
 
 export const generateUploadUrl = mutation({
-    args: {},
-    handler: async (ctx) => {
-        await requireUserId(ctx);
+    args: { token: v.optional(v.string()) },
+    handler: async (ctx, { token }) => {
+        await requireUser(ctx, token);
         return await ctx.storage.generateUploadUrl();
     },
 });
 
 export const addAsset = mutation({
-    args: { storageId: v.id("_storage"), type: v.string(), name: v.optional(v.string()), size: v.optional(v.number()), posterUrl: v.optional(v.string()) },
+    args: { token: v.optional(v.string()), storageId: v.id("_storage"), type: v.string(), name: v.optional(v.string()), size: v.optional(v.number()), posterUrl: v.optional(v.string()) },
     handler: async (ctx, args) => {
-        const userId = await requireUserId(ctx);
+        const userId = await requireUser(ctx, args.token);
         const id = await ctx.db.insert("mediaAssets", { userId, storageId: args.storageId, type: args.type, name: args.name, size: args.size, posterUrl: args.posterUrl, source: "upload" });
         return shape(ctx, (await ctx.db.get(id))!);
     },
 });
 
 export const patchPoster = mutation({
-    args: { id: v.id("mediaAssets"), posterUrl: v.string() },
-    handler: async (ctx, { id, posterUrl }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), id: v.id("mediaAssets"), posterUrl: v.string() },
+    handler: async (ctx, { token, id, posterUrl }) => {
+        const userId = await requireUser(ctx, token);
         const a = await ctx.db.get(id);
         if (!a || a.userId !== userId) throw new Error("Media not found");
         await ctx.db.patch(id, { posterUrl });
@@ -57,9 +57,9 @@ export const patchPoster = mutation({
 });
 
 export const remove = mutation({
-    args: { id: v.id("mediaAssets") },
-    handler: async (ctx, { id }) => {
-        const userId = await requireUserId(ctx);
+    args: { token: v.optional(v.string()), id: v.id("mediaAssets") },
+    handler: async (ctx, { token, id }) => {
+        const userId = await requireUser(ctx, token);
         const a = await ctx.db.get(id);
         if (!a || a.userId !== userId) throw new Error("Media not found");
         if (a.storageId) await ctx.storage.delete(a.storageId);
